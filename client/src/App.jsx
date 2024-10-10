@@ -7,6 +7,8 @@ import AdminRegister from './Pages/AdminRegister';
 import CreatePatient from './Pages/CreatePatient';
 import Navbar from './components/Navbar'; 
 import AdminDashboard from './components/AdminDashboard';
+import ReportPage from './components/ReportPage';
+
 const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -17,12 +19,14 @@ const App = () => {
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400 flex flex-col">
-        <Navbar onSearch={handleSearch} />
+        {}
+        <Navbar onSearch={handleSearch} searchQuery={searchQuery} />
         <div className="flex-1">
           <Routes>
             <Route path="/login" element={<AdminLogin />} />
             <Route path="/register" element={<AdminRegister />} />
             <Route path="/" element={<PatientTable searchQuery={searchQuery} />} />
+            <Route path="/report" element={<ReportPage />} />
             <Route path="/create-patient" element={<CreatePatient />} />
             <Route path='/admin-dashboard' element={<AdminDashboard />} />
             <Route path="*" element={<div className="text-center text-red-600">Page Not Found</div>} />
@@ -34,7 +38,3 @@ const App = () => {
 };
 
 export default App;
-
-
-
-
