@@ -1,31 +1,62 @@
 import mongoose from "mongoose";
 import DicomFile from "./dicomFileModel.js";
+
 const patientSchema = new mongoose.Schema({
-    name:{
-        type:String,
-        required:true
+    PatientID: {
+        type: String, 
+        required: true,
+        unique: true 
     },
-    age:{
-        type:Number,
-        required:true
+    orthancPatientId: {
+        type: String,
+        required: true
     },
-    gender:{
-        type:String,
-        required:true
+    name: {
+        type: String,
+        required: true
     },
-    medicalHistory:{
-        type:String
+    age: {
+        type: Number,
+        required: true
+    },
+    gender: {
+        type: String,
+        required: true
+    },
+    medicalHistory: {
+        type: String
+    },
+    StudyDate: {
+        type: Date,
+        required: true
+    },
+    StudyTime: {
+        type: String 
+    },
+    Modality: {
+        type: String 
     },
     dicomFiles: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'DicomFile',
-      }],
-    recievingDate:{
-        type:Date,
-        default:Date.now
-    }  
-}
-,{timestamps:true});
+    }],
+    receivingDate: {
+        type: Date,
+        default: Date.now
+    },
+    studyInstanceUID: { 
+        type: String,
+        required: true
+    },
+    seriesInstanceUID: { 
+        type: String,
+        required: true
+    },
+    sopInstanceUID: { 
+        type: String,
+        required: true
+    }
+}, { timestamps: true });
 
-const Patient = mongoose.model('Patient',patientSchema);
-export default Patient
+const Patient = mongoose.model('Patient', patientSchema);
+export default Patient;

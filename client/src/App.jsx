@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import AdminDashboard from './components/AdminDashboard';
 import ReportPage from './components/ReportPage';
 
+
 const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
