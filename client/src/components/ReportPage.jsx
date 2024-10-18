@@ -25,6 +25,7 @@ const ReportPage = () => {
   const [newTemplateModality, setNewTemplateModality] = useState('');
 
   useEffect(() => {
+    document.title = patient.patientName;
     if (editor.current) {
       editor.current.focus();
     }
@@ -58,13 +59,11 @@ const ReportPage = () => {
   };
 
   const handleCreateTemplateClick = () => {
-    // Switch to template creation mode
     setIsCreatingTemplate(true);
     setContent('');
   };
 
   const handleSaveTemplate = async () => {
-    // Save the new template to the database
     try {
       const response = await axios.post('/api/createTemplate', {
         name: newTemplateName,
@@ -87,6 +86,30 @@ const ReportPage = () => {
   return (
     <div className="flex justify-center items-start min-h-screen bg-gray-100">
       <div className="w-1/4 p-4">
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Patient Name:</th>
+              <td style={{ padding: '8px' }}>{patient.patientName}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Age:</th>
+              <td style={{ padding: '8px' }}>{patient.age}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Sex:</th>
+              <td style={{ padding: '8px' }}>{patient.gender}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Study:</th>
+              <td style={{ padding: '8px' }}>{patient.medicalHistory}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #ccc' }}>
+              <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Patient ID:</th>
+              <td style={{ padding: '8px' }}>{patient._id}</td>
+            </tr>
+          </tbody>
+        </table>
         <div className="mb-4">
           <Label for="modality" className="block font-medium mb-2">
             Select Modality
@@ -128,6 +151,7 @@ const ReportPage = () => {
           </Input>
         </div>
         <div className="mb-4">
+
           <Button color="success" onClick={handleSelectTemplate} className="w-full">
             Select Template
           </Button>
