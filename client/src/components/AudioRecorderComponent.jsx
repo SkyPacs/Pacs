@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from "react-router-dom";
 import axios from 'axios';
-// import { ReactMic } from 'react-mic';
+import { ReactMic } from 'react-18-mic';
 
 const AudioRecorderComponent = () => {
   const location = useLocation();
@@ -59,7 +59,7 @@ const AudioRecorderComponent = () => {
 
   const handleSubmit = async () => {
     try {
-      const response = await axios.post(`/api/patients/${patientId}/chat`, { notes });
+      const response = await axios.post(`/api/patients/${patient._Id}/chat`, { notes });
       console.log(response);
     } catch (error) {
       console.error(error);
@@ -68,36 +68,37 @@ const AudioRecorderComponent = () => {
 
   return (
     <div className="chatbox-container max-w-lg mx-auto py-8 px-4 bg-white shadow-lg rounded-lg">
-      {}
       <table>
+        <tbody>
           <tr>
-              <th> Patient Name :</th>
-              <td>{patient.name}</td>
+            <th>Patient Name:</th>
+            <td>{patient.patientName}</td>
           </tr>
           <tr>
-              <th>Age :</th>
-              <td>{patient.age}</td>
+            <th>Age:</th>
+            <td>{patient.age}</td>
           </tr>
           <tr>
-              <th>Sex :</th>
-              <td>{patient.gender}</td>
+            <th>Sex:</th>
+            <td>{patient.gender}</td>
           </tr>
           <tr>
-              <th>Study :</th>
-              <td>{patient.medicalHistory}</td>
+            <th>Study:</th>
+            <td>{patient.medicalHistory}</td>
           </tr>
           <tr>
-              <th>Reff. Dr. :</th>
-              <td>{patient.doctor}</td>
+            <th>Reff. Dr.:</th>
+            <td>{patient.doctor}</td>
           </tr>
           <tr>
-              <th>Patient ID :</th>
-              <td>{patient._id}</td>
+            <th>Patient ID:</th>
+            <td>{patient._id}</td>
           </tr>
           <tr>
-              <th>Study Date :</th>
-              <td>{patient.recievingDate}</td>
+            <th>Study Date:</th>
+            <td>{patient.recievingDate}</td>
           </tr>
+        </tbody>
       </table>
       <div className="chat-notes bg-gray-100 p-4 h-60 overflow-y-auto rounded-lg">
         {notes.length === 0 ? (
@@ -118,7 +119,6 @@ const AudioRecorderComponent = () => {
         )}
       </div>
 
-      {}
       <form onSubmit={handleTextSubmit} className="mt-4 flex items-center">
         <input
           type="text"
@@ -129,13 +129,12 @@ const AudioRecorderComponent = () => {
         />
         <button
           type="submit"
-          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md font-semibold"
+          className="ml- 2 px-4 py-2 bg-blue-500 text-white rounded-md font-semibold"
         >
           Save
         </button>
       </form>
 
-      {}
       <div className="audio-recorder mt-4">
         <ReactMic
           record={voice}
@@ -180,4 +179,5 @@ const AudioRecorderComponent = () => {
     </div>
   );
 };
+
 export default AudioRecorderComponent;
