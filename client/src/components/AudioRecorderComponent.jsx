@@ -86,7 +86,7 @@ const AudioRecorderComponent = () => {
             <th>Study:</th>
             <td>{patient.medicalHistory}</td>
           </tr>
-          <tr>
+          <tr> 
             <th>Reff. Dr.:</th>
             <td>{patient.doctor}</td>
           </tr>

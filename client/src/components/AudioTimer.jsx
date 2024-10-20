@@ -6,7 +6,7 @@ const AudioTimer = ({ isRunning, elapsedTime, setElapsedTime }) => {
 
     if (isRunning) {
       intervalId = setInterval(() => setElapsedTime(prevTime => prevTime + 1), 10);
-    }
+    } 
 
     return () => clearInterval(intervalId);
   }, [isRunning, setElapsedTime]);

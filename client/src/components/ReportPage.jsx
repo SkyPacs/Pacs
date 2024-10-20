@@ -8,7 +8,7 @@ const editorConfig = {
   readonly: false,
   height: 800,
   toolbarAdaptive: false,
-};
+}; 
 
 const ReportPage = () => {
   const location = useLocation();
