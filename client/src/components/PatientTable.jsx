@@ -78,6 +78,9 @@ const PatientTable = ({ searchQuery }) => {
   const handleGenerateReport = (patient) => {
     navigate(`/report`, { state: { patient } });
   };
+  const handleaudio = (patient) => {
+    navigate(`/audio`, { state: { patient } });
+  };
 
   useEffect(() => {
     if (downloadComplete) {
@@ -125,6 +128,14 @@ const PatientTable = ({ searchQuery }) => {
                       Generate Report
                     </button>
                   </td>
+                  <td className="py-2 px-3 border-b text-sm">
+                  <button
+                    className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+                    onClick={() => handleaudio(patient)}
+                  >
+                    Notes
+                  </button>
+                </td>
                 </tr>
               ))}
             </tbody>
