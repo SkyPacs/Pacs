@@ -80,12 +80,14 @@ import moment from 'moment';
 
 export const handleDicomFileUpload = async (req, res) => {
   try {
-    const zipFile = req.file; 
+    const zipFile = req.file;
     console.log('Received ZIP file:', zipFile);
+
     if (!zipFile) {
       console.error('No file uploaded');
       return res.status(400).json({ message: 'No file uploaded' });
     }
+
     const zip = new AdmZip(zipFile.buffer);
     const zipEntries = zip.getEntries();
 
@@ -98,128 +100,133 @@ export const handleDicomFileUpload = async (req, res) => {
     const dicomPromises = [];
 
     for (const entry of zipEntries) {
-      if (!entry.isDirectory) { 
-        const dicomBuffer = entry.getData(); 
-        const dicomFileName = entry.entryName; 
+      if (!entry.isDirectory) {
+        const dicomBuffer = entry.getData();
+        const dicomFileName = entry.entryName;
         console.log('Processing DICOM file:', dicomFileName);
-        if (!dicomFileName.toLowerCase().endsWith('.dcm')) {
-          console.warn(`Skipping non-DICOM file: ${dicomFileName}`);
-          continue; 
-        }
+
         if (!Buffer.isBuffer(dicomBuffer)) {
           console.error('dicomBuffer is not a Buffer:', dicomBuffer);
           return res.status(400).json({ message: 'Uploaded file is not a valid Buffer' });
         }
-        const dataSet = dicomParser.parseDicom(dicomBuffer);
-        const PatientID = dataSet.string('x00100020'); // Patient ID
-        const PatientName = dataSet.string('x00100010'); // Patient Name
-        const PatientBirthDateStr = dataSet.string('x00100030'); // Patient Birth Date
-        const PatientSex = dataSet.string('x00100040'); // Patient Sex
-        const StudyDateStr = dataSet.string('x00080020'); // Study Date
-        const StudyTime = dataSet.string('x00080030'); // Study Time
-        const Modality = dataSet.string('x00080060'); // Modality
-        const studyInstanceUID = dataSet.string('x0020000d'); // Study Instance UID
-        const seriesInstanceUID = dataSet.string('x0020000e'); // Series Instance UID
-        const sopInstanceUID = dataSet.string('x00080018'); // SOP Instance UID
-
-        const PatientBirthDate = moment(PatientBirthDateStr, 'YYYYMMDD').toDate();
-        const StudyDate = moment(StudyDateStr, 'YYYYMMDD').toDate(); 
-        const age = moment().diff(moment(PatientBirthDate), 'years'); 
-
-        console.log('Extracted metadata:', {
-          PatientID,
-          PatientName,
-          PatientBirthDate,
-          PatientSex,
-          StudyDate,
-          StudyTime,
-          Modality,
-          age,
-          studyInstanceUID,
-          seriesInstanceUID,
-          sopInstanceUID,
-        });
-
-        // Create a FormData instance and append the DICOM file
-        const formData = new FormData();
-        formData.append('file', dicomBuffer, {
-          filename: dicomFileName,
-          contentType: 'application/dicom',
-        });
-
-        const orthancUrl = process.env.ORTHANC_URL || 'http://localhost:8042';
-        console.log('Sending DICOM file to Orthanc at:', orthancUrl);
 
         try {
-          const orthancResponse = await axios.post(`${orthancUrl}/instances`, formData, {
-            headers: {
-              ...formData.getHeaders(),
-            },
-          });
-          const patientResponse = await axios.get(`${orthancUrl}/patients`);
-          console.log(patientResponse.data);
-          const patientIds = patientResponse.data;
-          const orthancPatientId = patientIds[0];
+          const dataSet = dicomParser.parseDicom(dicomBuffer);
+          const PatientID = dataSet.string('x00100020');
+          const PatientName = dataSet.string('x00100010');
+          const PatientBirthDateStr = dataSet.string('x00100030');
+          const PatientSex = dataSet.string('x00100040');
+          const StudyDateStr = dataSet.string('x00080020');
+          const StudyTime = dataSet.string('x00080030');
+          const Modality = dataSet.string('x00080060');
+          const studyInstanceUID = dataSet.string('x0020000d');
+          const seriesInstanceUID = dataSet.string('x0020000e');
+          const sopInstanceUID = dataSet.string('x00080018');
+          const PatientAge = dataSet.string('x00101010');
+          console.log('PatientAge:', PatientAge);
+          // Parse dates and calculate age
+          // const PatientBirthDate = PatientBirthDateStr ? moment(PatientBirthDateStr, 'YYYYMMDD').toDate() : null;
+           const StudyDate = StudyDateStr ? moment(StudyDateStr, 'YYYYMMDD').toDate() : null;
+          // const age = PatientBirthDate ? moment().diff(moment(PatientBirthDate), 'years') : null;
 
-          let patient = await Patient.findOne({ PatientID });
-          
-          if (!patient) {
-            patient = new Patient({
-              PatientID,
-              orthancPatientId: orthancPatientId,
-              name: PatientName,
-              age: age, // Use calculated age
-              gender: PatientSex,
-              StudyDate: StudyDate, // Use parsed StudyDate
-              StudyTime,
-              Modality,
-              studyInstanceUID, // Add Study Instance UID to patient
-              seriesInstanceUID, // Add Series Instance UID to patient
-              sopInstanceUID, // Add SOP Instance UID to patient
-            });
-          } else {
-            patient.name = PatientName;
-            patient.age = age; 
-            patient.gender = PatientSex;
-            patient.StudyDate = StudyDate; 
-            patient.StudyTime = StudyTime;
-            patient.Modality = Modality;
-            patient.orthancPatientId = orthancPatientId;
-            patient.studyInstanceUID = studyInstanceUID; // Update Study Instance UID
-            patient.seriesInstanceUID = seriesInstanceUID; // Update Series Instance UID
-            patient.sopInstanceUID = sopInstanceUID; // Update SOP Instance UID
-          }
+          console.log('Extracted metadata:', {
+            PatientID,
+            PatientName,
+            //PatientBirthDate,
+            PatientSex,
+            StudyDate,
+            StudyTime,
+            Modality,
+            PatientAge,
+            studyInstanceUID,
+            seriesInstanceUID,
+            sopInstanceUID,
+          });
+
+          // Create FormData and append the DICOM file for Orthanc
+          const formData = new FormData();
+          formData.append('file', dicomBuffer, {
+            filename: dicomFileName,
+            contentType: 'application/dicom',
+          });
+
+          const orthancUrl = process.env.ORTHANC_URL || 'http://localhost:8042';
+          console.log('Sending DICOM file to Orthanc at:', orthancUrl);
+
           try {
+            const orthancResponse = await axios.post(`${orthancUrl}/instances`, formData, {
+              headers: { ...formData.getHeaders() },
+            });
+            const patientResponse = await axios.get(`${orthancUrl}/patients`);
+            const patientIds = patientResponse.data;
+            console.log('Orthanc patients:', patientIds);
+            const orthancPatientId = patientIds[patientIds.length - 1];
+            console.log('Orthanc patient ID:', orthancPatientId);
+            // Upsert patient data
+            let patient = await Patient.findOne({ orthancPatientId });
+
+            if (!patient) {
+              patient = new Patient({
+                PatientID,
+                orthancPatientId,
+                name: PatientName,
+                PatientAge, 
+                gender: PatientSex,
+                StudyDate,
+                StudyTime,
+                Modality,
+                studyInstanceUID,
+                seriesInstanceUID,
+                sopInstanceUID,
+              });
+            } else {
+              // Update existing patient information
+              patient.name = PatientName;
+              patient.PatientAge = PatientAge;
+              patient.gender = PatientSex;
+              patient.StudyDate = StudyDate;
+              patient.StudyTime = StudyTime;
+              patient.Modality = Modality;
+              patient.orthancPatientId = orthancPatientId;
+              patient.studyInstanceUID = studyInstanceUID;
+              patient.seriesInstanceUID = seriesInstanceUID;
+              patient.sopInstanceUID = sopInstanceUID;
+            }
+
             await patient.save();
             console.log('Patient saved:', patient);
-          } catch (err) {
-            console.error('Error saving patient:', err);
-            return res.status(500).json({ message: 'Error saving patient information' });
-          }
-          const newDicomFile = new DicomFile({
-            patientId: patient._id,
-            PatientID,
-            patientName: PatientName,
-            patientBirthDate: PatientBirthDate,
-            patientSex: PatientSex,
-            studyDate: StudyDate,
-            studyTime: StudyTime,
-            modality: Modality,
-            studyInstanceUID, // Store Study Instance UID
-            seriesInstanceUID, // Store Series Instance UID
-            sopInstanceUID, // Store SOP Instance UID
-          });
-          const savedDicomFile = await newDicomFile.save();
-          dicomPromises.push(savedDicomFile); 
-          patient.dicomFiles.push(savedDicomFile._id); 
-          await patient.save();
-          console.log('DICOM file associated with patient:', savedDicomFile._id);
 
-        } catch (error) {
-          console.error('Error sending DICOM file to Orthanc:', error.response ? error.response.data : error.message);
+            // Save DICOM file metadata
+            const newDicomFile = new DicomFile({
+              patientId: patient._id,
+              PatientID,
+              patientName: PatientName,
+              // patientBirthDate: PatientBirthDate,
+              patientSex: PatientSex,
+              studyDate: StudyDate,
+              studyTime: StudyTime,
+              modality: Modality,
+              studyInstanceUID,
+              seriesInstanceUID,
+              sopInstanceUID,
+            });
+            const savedDicomFile = await newDicomFile.save();
+            dicomPromises.push(savedDicomFile); // Save promise to array
+
+            // Link DICOM file to the patient
+            patient.dicomFiles.push(savedDicomFile._id);
+            await patient.save();
+            console.log('DICOM file associated with patient:', savedDicomFile._id);
+          } catch (error) {
+            console.error('Error sending DICOM file to Orthanc:', error.response ? error.response.data : error.message);
+          }
+        } catch (dicomParseError) {
+          console.error('Error parsing DICOM file:', dicomParseError);
         }
       }
     }
+
+    // Wait for all DICOM files to be saved
     await Promise.all(dicomPromises);
     console.log('All DICOM files saved successfully.');
 
@@ -228,8 +235,9 @@ export const handleDicomFileUpload = async (req, res) => {
   } catch (error) {
     console.error('Error uploading DICOM file:', error);
     return res.status(500).json({ message: error.message });
-  }  
+  }
 };
+
 
 
 export const getAllPatientsWithDicomMetadata = async (req, res) => {
@@ -239,14 +247,14 @@ export const getAllPatientsWithDicomMetadata = async (req, res) => {
     if (!patients || patients.length === 0) {
       return res.status(404).json({ message: 'No patients found.' });
     }
-
     // Prepare the response data
     const patientData = patients.map(patient => ({
-      patientID: patient.orthancPatientId,
+      orthancPatientId: patient.orthancPatientId,
+      patientID: patient.PatientID,
       patientName: patient.name,
-      age: patient.age,
+      age: patient.PatientAge,
       gender: patient.gender,
-      receivingDate: patient.StudyDate,
+      receivingDate: patient.receivingDate,
       studyInstanceUID:patient.studyInstanceUID,
       seriesInstanceUID:patient.seriesInstanceUID,
       sopInstanceUID:patient.sopInstanceUID,

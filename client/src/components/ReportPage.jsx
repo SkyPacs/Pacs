@@ -15,26 +15,27 @@ const ReportPage = () => {
   const patient = location.state?.patient;
   const editor = useRef(null);
   const [content, setContent] = useState('');
-
   const [modalities, setModalities] = useState(['CT', 'XRAY']);
   const [templates, setTemplates] = useState([]);
   const [selectedModality, setSelectedModality] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateModality, setNewTemplateModality] = useState('');
 
   useEffect(() => {
-    document.title = patient.patientName;
+    document.title = patient?.patientName || "Report Page";
     if (editor.current) {
       editor.current.focus();
     }
     fetchTemplates();
-  }, []);
+  }, [patient?.patientID]);
 
   const fetchTemplates = async () => {
+    if (!patient) return; 
     try {
-      const response = await axios.get('/api/getTemplates');
+      const response = await axios.get(`/api/getTemplates?patientId=${patient.patientID}`);
+      console.log('Fetched templates:', response.data);
       setTemplates(response.data);
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -43,33 +44,39 @@ const ReportPage = () => {
 
   const handleModalityChange = (e) => {
     setSelectedModality(e.target.value);
+    setSelectedTemplate(null); 
+    setContent(''); 
+    console.log('Selected modality:', e.target.value);
   };
 
   const handleTemplateChange = (e) => {
-    const template = templates.find(t => t.id === e.target.value);
+    const selectedId = e.target.value;
+    const template = templates.find(t => t._id === selectedId); 
+    console.log('Selected template ID:', selectedId);
+    setSelectedTemplate(template || null); 
     if (template) {
-      setSelectedTemplate(template);
-    }
-  };
-
-  const handleSelectTemplate = () => {
-    if (selectedTemplate) {
-      setContent(selectedTemplate.content);
+      setContent(template.content); 
+      console.log('Content set for editor:', template.content);
+    } else {
+      setContent('');
     }
   };
 
   const handleCreateTemplateClick = () => {
     setIsCreatingTemplate(true);
-    setContent('');
+    setContent(''); 
   };
 
   const handleSaveTemplate = async () => {
+    if (!patient) return; 
     try {
       const response = await axios.post('/api/createTemplate', {
         name: newTemplateName,
         content: content,
         modality: newTemplateModality,
+        patientId: patient.patientID,
       });
+      console.log('Template saved:', response.data);
       setTemplates([...templates, response.data]);
       setIsCreatingTemplate(false);
       setNewTemplateName('');
@@ -81,32 +88,33 @@ const ReportPage = () => {
 
   const handleEditorChange = (newContent) => {
     setContent(newContent);
+    console.log('Editor content changed:', newContent);
   };
 
   return (
     <div className="flex justify-center items-start min-h-screen bg-gray-100">
       <div className="w-1/4 p-4">
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
               <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Patient Name:</th>
-              <td style={{ padding: '8px' }}>{patient.patientName}</td>
+              <td style={{ padding: '8px' }}>{patient?.patientName}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
               <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Age:</th>
-              <td style={{ padding: '8px' }}>{patient.age}</td>
+              <td style={{ padding: '8px' }}>{patient?.age}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
               <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Sex:</th>
-              <td style={{ padding: '8px' }}>{patient.gender}</td>
+              <td style={{ padding: '8px' }}>{patient?.gender}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
               <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Study:</th>
-              <td style={{ padding: '8px' }}>{patient.medicalHistory}</td>
+              <td style={{ padding: '8px' }}>{patient?.dicomFiles?.[0]?.modality}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #ccc' }}>
               <th style={{ padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Patient ID:</th>
-              <td style={{ padding: '8px' }}>{patient._id}</td>
+              <td style={{ padding: '8px' }}>{patient?.patientID}</td>
             </tr>
           </tbody>
         </table>
@@ -135,7 +143,7 @@ const ReportPage = () => {
           <Input
             id="template"
             type="select"
-            value={selectedTemplate.id || ''}
+            value={selectedTemplate ? selectedTemplate._id : ''}
             onChange={handleTemplateChange}
             className="w-full p-2 border border-gray-300 rounded"
             disabled={!selectedModality}
@@ -144,20 +152,14 @@ const ReportPage = () => {
             {templates
               .filter(template => template.modality === selectedModality)
               .map(template => (
-                <option key={template.id} value={template.id}>
+                <option key={template._id} value={template._id}>
                   {template.name}
                 </option>
               ))}
           </Input>
         </div>
         <div className="mb-4">
-
-          <Button color="success" onClick={handleSelectTemplate} className="w-full">
-            Select Template
-          </Button>
-        </div>
-        <div className="mb-4">
-          <Button color="primary" onClick={handleCreateTemplateClick} className="w-full">
+          <Button color="success" onClick={handleCreateTemplateClick} className="w-full">
             Create New Template
           </Button>
         </div>
@@ -202,25 +204,24 @@ const ReportPage = () => {
                     />
                   </Col>
                 </Row>
+                <JoditEditor
+                  ref={editor}
+                  value={content}
+                  config={editorConfig}
+                  onChange={handleEditorChange}
+                />
+                <Button color="primary" onClick={handleSaveTemplate} className="mt-4">
+                  Save Template
+                </Button>
               </>
             )}
-
-            <div className="mb-4">
-              <Label for="title" className="block text-left font-medium mb-2">
-                {isCreatingTemplate ? 'Template Content' : 'Report Content'}
-              </Label>
+            {!isCreatingTemplate && (
               <JoditEditor
                 ref={editor}
                 value={content}
                 config={editorConfig}
                 onChange={handleEditorChange}
               />
-            </div>
-
-            {isCreatingTemplate && (
-              <Button color="primary" onClick={handleSaveTemplate} className="w-full">
-                Save Template
-              </Button>
             )}
           </Form>
         </CardBody>
@@ -229,4 +230,5 @@ const ReportPage = () => {
   );
 };
 
-export default ReportPage; 
+export default ReportPage;
+

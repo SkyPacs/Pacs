@@ -47,7 +47,15 @@ const AudioRecorderComponent = () => {
     setRecordBlobLink(recordedBlob.blobURL);
     saveAudioNote(recordedBlob.blobURL);
   };
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date/Time';
 
+    const formattedDate = date.toLocaleDateString();
+    const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    return `${formattedDate} ${formattedTime}`;
+  };
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if (textNote.trim() !== "") {
@@ -84,7 +92,7 @@ const AudioRecorderComponent = () => {
           </tr>
           <tr>
             <th>Study:</th>
-            <td>{patient.medicalHistory}</td>
+            <td>{patient.dicomFiles[0].modality}</td>
           </tr>
           <tr> 
             <th>Reff. Dr.:</th>
@@ -92,11 +100,11 @@ const AudioRecorderComponent = () => {
           </tr>
           <tr>
             <th>Patient ID:</th>
-            <td>{patient._id}</td>
+            <td>{patient.patientID}</td>
           </tr>
           <tr>
             <th>Study Date:</th>
-            <td>{patient.recievingDate}</td>
+            <td>{formatDateTime(patient.receivingDate)}</td>
           </tr>
         </tbody>
       </table>

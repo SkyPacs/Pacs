@@ -8,10 +8,12 @@ const PatientTable = ({ searchQuery }) => {
   const [error, setError] = useState(null);
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [downloadComplete, setDownloadComplete] = useState(false);
+  const [downloadedPatients, setDownloadedPatients] = useState(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPatients();
+    loadDownloadedPatients();
   }, [searchQuery]);
 
   const fetchPatients = async () => {
@@ -37,47 +39,63 @@ const PatientTable = ({ searchQuery }) => {
       setLoading(false);
     }
   };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Invalid Date';
-    return date.toLocaleDateString();
+  const loadDownloadedPatients = () => {
+    const savedDownloadedPatients = localStorage.getItem('downloadedPatients');
+    if (savedDownloadedPatients) {
+      setDownloadedPatients(new Set(JSON.parse(savedDownloadedPatients)));
+    }
+  };
+  const saveDownloadedPatients = (updatedSet) => {
+    localStorage.setItem('downloadedPatients', JSON.stringify(Array.from(updatedSet)));
   };
 
- const handleDownloadReport = async (patientID, patientName) => {
-  setDownloadProgress(0);
-  setDownloadComplete(false);
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date/Time';
 
-  try {
-    const response = await axios.get(`/api/patients/${patientID}/dicom/download`, {
-      responseType: 'blob',
-      onDownloadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        setDownloadProgress(percentCompleted);
-        if (percentCompleted === 100) {
-          setDownloadComplete(true);
-        }
-      },
-    });
+    const formattedDate = date.toLocaleDateString();
+    const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.setAttribute('download', `${patientName || 'Unknown_Patient'}_dicom_files.zip`);
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error('Error downloading the report:', error);
-    alert('Error downloading the report. Please try again later.');
-    setDownloadProgress(null);
-  }
-};
+    return `${formattedDate} ${formattedTime}`;
+  };
 
+  const handleDownloadReport = async (orthancPatientId, patientName) => {
+    setDownloadProgress(0);
+    setDownloadComplete(false);
+
+    try {
+      const response = await axios.get(`/api/patients/${orthancPatientId}/dicom/download`, {
+        responseType: 'blob',
+        onDownloadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setDownloadProgress(percentCompleted);
+          if (percentCompleted === 100) {
+            setDownloadComplete(true);
+          }
+        },
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.setAttribute('download', `${patientName || 'Unknown_Patient'}_dicom_files.zip`);
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      const updatedDownloadedPatients = new Set(downloadedPatients).add(orthancPatientId);
+      setDownloadedPatients(updatedDownloadedPatients);
+      saveDownloadedPatients(updatedDownloadedPatients);
+    } catch (error) {
+      console.error('Error downloading the report:', error);
+      alert('Error downloading the report. Please try again later.');
+      setDownloadProgress(null);
+    }
+  };
 
   const handleGenerateReport = (patient) => {
     navigate(`/report`, { state: { patient } });
   };
+
   const handleaudio = (patient) => {
     navigate(`/audio`, { state: { patient } });
   };
@@ -109,33 +127,43 @@ const PatientTable = ({ searchQuery }) => {
                 <th className="py-2 px-3 border-b text-sm font-medium">Age</th>
                 <th className="py-2 px-3 border-b text-sm font-medium">Gender</th>
                 <th className="py-2 px-3 border-b text-sm font-medium">Number Of Images</th>
-                <th className="py-2 px-3 border-b text-sm font-medium">Receiving Date</th>
+                <th className='py-2 px-3 border-b text-sm font-medium'>Modality</th>
+                <th className="py-2 px-3 border-b text-sm font-medium">Receiving Date & Time</th>
                 <th className="py-2 px-3 border-b text-sm font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {patients.map((patient) => (
                 <tr key={patient.patientID} className="text-left">
-                  <td className="py-2 px-3 border-b text-blue-500 text-sm cursor-pointer hover:underline" onClick={() => handleDownloadReport(patient.patientID, patient.patientName)}>
+                  <td
+                    className={`py-2 px-3 border-b text-sm cursor-pointer hover:underline ${
+                      downloadedPatients.has(patient.orthancPatientId) ? 'bg-yellow-200' : ''
+                    }`}
+                    onClick={() => handleDownloadReport(patient.orthancPatientId, patient.patientName)}
+                  >
                     {patient.patientName || 'Unknown Patient'}
                   </td>
                   <td className="py-2 px-3 border-b text-sm">{patient.age}</td>
                   <td className="py-2 px-3 border-b text-sm">{patient.gender}</td>
                   <td className="py-2 px-3 border-b text-sm">{patient.dicomCount}</td>
-                  <td className="py-2 px-3 border-b text-sm">{formatDate(patient.receivingDate)}</td>
+                  <td className="py-2 px-3 border-b text-sm">{patient.dicomFiles[0].modality}</td>
+                  <td className="py-2 px-3 border-b text-sm">{formatDateTime(patient.receivingDate)}</td>
                   <td className="py-2 px-3 border-b text-sm">
-                    <button className="bg-blue-500 text-white px-3 py-1 rounded mr-2" onClick={() => handleGenerateReport(patient)}>
+                    <button
+                      className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+                      onClick={() => handleGenerateReport(patient)}
+                    >
                       Generate Report
                     </button>
                   </td>
                   <td className="py-2 px-3 border-b text-sm">
-                  <button
-                    className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
-                    onClick={() => handleaudio(patient)}
-                  >
-                    Notes
-                  </button>
-                </td>
+                    <button
+                      className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+                      onClick={() => handleaudio(patient)}
+                    >
+                      Notes
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
