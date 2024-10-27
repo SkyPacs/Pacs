@@ -11,18 +11,25 @@ const AudioRecorderComponent = () => {
   const [textNote, setTextNote] = useState('');
   const [recordBlobLink, setRecordBlobLink] = useState(null);
   const [notes, setNotes] = useState([]);
-  const [patientId, setPatientId] = useState(patient._id); 
+  const formatDateTime = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, options);
+  };
 
   useEffect(() => {
-    document.title = patient.patientName;
-    axios.get(`/api/patients/notes`)
-      .then(response => {
-        setNotes(response.data.notes);
-      })
-      .catch(error => {
-        console.error(error);
-      });
-  }, [patientId]);
+    if (patient) {
+      axios.get(`/api/${patient.patientID}/audio`)
+        .then(response => {
+          setNotes(response.data.notes);
+        })
+        .catch(error => {
+          console.error("Error fetching notes:", error);
+        });
+    } else {
+      console.error("Patient data is undefined");
+    }
+  }, [patient]);
 
   const handleStart = () => {
     setIsRunning(true);
@@ -47,15 +54,7 @@ const AudioRecorderComponent = () => {
     setRecordBlobLink(recordedBlob.blobURL);
     saveAudioNote(recordedBlob.blobURL);
   };
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Invalid Date/Time';
 
-    const formattedDate = date.toLocaleDateString();
-    const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-    return `${formattedDate} ${formattedTime}`;
-  };
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if (textNote.trim() !== "") {
@@ -66,48 +65,67 @@ const AudioRecorderComponent = () => {
   };
 
   const handleSubmit = async () => {
-    try {
-      const response = await axios.post(`/api/patients/${patient._Id}/chat`, { notes });
-      console.log(response);
-    } catch (error) {
-      console.error(error);
+    if (recordBlobLink) {
+      try {
+        const response = await fetch(recordBlobLink);
+        const blob = await response.blob();
+
+        const formData = new FormData();
+        formData.append('audioFile', blob, 'audioNote.wav');
+
+        const saveResponse = await axios.post(`/api/${patient.patientID}/audio`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        console.log("Response from server:", saveResponse.data);
+        // Optionally fetch and update notes after saving
+        const updatedNotesResponse = await axios.get(`/api/${patient.patientID}/audio`);
+        setNotes(updatedNotesResponse.data.notes);
+
+      } catch (error) {
+        console.error("Error saving audio note:", error);
+      }
     }
   };
 
   return (
     <div className="chatbox-container max-w-lg mx-auto py-8 px-4 bg-white shadow-lg rounded-lg">
+      {/* Patient details */}
       <table>
         <tbody>
           <tr>
             <th>Patient Name:</th>
-            <td>{patient.patientName}</td>
+            <td>{patient?.patientName}</td>
           </tr>
           <tr>
             <th>Age:</th>
-            <td>{patient.age}</td>
+            <td>{patient?.age}</td>
           </tr>
           <tr>
             <th>Sex:</th>
-            <td>{patient.gender}</td>
+            <td>{patient?.gender}</td>
           </tr>
           <tr>
             <th>Study:</th>
-            <td>{patient.dicomFiles[0].modality}</td>
+            <td>{patient?.dicomFiles[0]?.modality}</td>
           </tr>
           <tr> 
             <th>Reff. Dr.:</th>
-            <td>{patient.doctor}</td>
+            <td>{patient?.doctor}</td>
           </tr>
           <tr>
             <th>Patient ID:</th>
-            <td>{patient.patientID}</td>
+            <td>{patient?.patientID}</td>
           </tr>
           <tr>
             <th>Study Date:</th>
-            <td>{formatDateTime(patient.receivingDate)}</td>
+            <td>{formatDateTime(patient?.receivingDate)}</td>
           </tr>
         </tbody>
       </table>
+      
+      {/* Notes Section */}
       <div className="chat-notes bg-gray-100 p-4 h-60 overflow-y-auto rounded-lg">
         {notes.length === 0 ? (
           <p className="text-gray-500">No Notes yet</p>
@@ -120,13 +138,14 @@ const AudioRecorderComponent = () => {
               {note.type === 'text' ? (
                 <p>{note.content}</p>
               ) : (
-                <audio controls src={note.content} />
+                <audio controls src={`/api/audio/${note._id}/stream`} />
               )}
             </div>
           ))
         )}
       </div>
 
+      {/* Text Note Input */}
       <form onSubmit={handleTextSubmit} className="mt-4 flex items-center">
         <input
           type="text"
@@ -137,16 +156,17 @@ const AudioRecorderComponent = () => {
         />
         <button
           type="submit"
-          className="ml- 2 px-4 py-2 bg-blue-500 text-white rounded-md font-semibold"
+          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md font-semibold"
         >
           Save
         </button>
       </form>
 
+      {/* Audio Recorder */}
       <div className="audio-recorder mt-4">
         <ReactMic
           record={voice}
-          className="sound-wave w-full"
+          className="hidden" 
           onStop={handleOnStop}
           strokeColor="#000000"
         />
@@ -182,6 +202,16 @@ const AudioRecorderComponent = () => {
           <div className="mt-4">
             <audio controls src={recordBlobLink} className="w-full" />
           </div>
+        )}
+
+        {/* Submit Button for Audio Notes */}
+        {recordBlobLink && (
+          <button
+            onClick={handleSubmit}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md font-semibold"
+          >
+            Save Audio Note
+          </button>
         )}
       </div>
     </div>
