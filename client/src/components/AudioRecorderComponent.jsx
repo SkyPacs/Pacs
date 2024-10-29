@@ -90,8 +90,10 @@ const AudioRecorderComponent = () => {
   };
 
   return (
-    <div className="chatbox-container max-w-lg mx-auto py-8 px-4 bg-white shadow-lg rounded-lg">
+    <div className="container mx-auto py-8 px-4">
       {/* Patient details */}
+      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="w-full lg:w-1/3 bg-white p-6 shadow-md rounded-lg">
       <table>
         <tbody>
           <tr>
@@ -124,9 +126,12 @@ const AudioRecorderComponent = () => {
           </tr>
         </tbody>
       </table>
+      </div>
       
       {/* Notes Section */}
-      <div className="chat-notes bg-gray-100 p-4 h-60 overflow-y-auto rounded-lg">
+      <div className="w-full lg:w-2/3 bg-white p-6 shadow-md rounded-lg">
+          <h2 className="text-lg font-semibold mb-4">Notes & Audio Recordings</h2>
+      <div className="chat-notes bg-gray-100 p-4 h-60 overflow-y-auto rounded-lg mb-4">
         {notes.length === 0 ? (
           <p className="text-gray-500">No Notes yet</p>
         ) : (
@@ -171,7 +176,7 @@ const AudioRecorderComponent = () => {
           strokeColor="#000000"
         />
 
-        <div className="flex justify-between mt-2">
+        <div className="flex justify-between mt-4">
           {!voice ? (
             <button
               onClick={handleStart}
@@ -214,6 +219,8 @@ const AudioRecorderComponent = () => {
           </button>
         )}
       </div>
+    </div>
+    </div>
     </div>
   );
 };
