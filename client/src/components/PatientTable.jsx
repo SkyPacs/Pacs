@@ -9,12 +9,14 @@ const PatientTable = ({ searchQuery }) => {
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [downloadComplete, setDownloadComplete] = useState(false);
   const [downloadedPatients, setDownloadedPatients] = useState(new Set());
+  const [dateFilter, setDateFilter] = useState('all');
+  const [modalityFilter, setModalityFilter] = useState('all');
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPatients();
     loadDownloadedPatients();
-  }, [searchQuery]);
+  }, [searchQuery, dateFilter, modalityFilter]);
 
   const fetchPatients = async () => {
     setLoading(true);
@@ -28,9 +30,14 @@ const PatientTable = ({ searchQuery }) => {
         return;
       }
 
-      const filteredPatients = response.data.data.filter((patient) =>
-        patient.patientName.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const filteredPatients = response.data.data.filter((patient) => {
+        const matchesSearchQuery = patient.patientName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesDateFilter = filterByDate(patient.receivingDate);
+        const matchesModalityFilter = filterByModality(patient.dicomFiles[0].modality);
+
+        return matchesSearchQuery && matchesDateFilter && matchesModalityFilter;
+      });
+
       setPatients(filteredPatients);
     } catch (error) {
       console.error('Error fetching patients:', error);
@@ -39,12 +46,37 @@ const PatientTable = ({ searchQuery }) => {
       setLoading(false);
     }
   };
+
+  const filterByDate = (dateString) => {
+    if (dateFilter === 'all') return true;
+    
+    const date = new Date(dateString);
+    const today = new Date();
+
+    switch (dateFilter) {
+      case '2days':
+        return (today - date) / (1000 * 60 * 60 * 24) <= 2;
+      case '7days':
+        return (today - date) / (1000 * 60 * 60 * 24) <= 7;
+      case '30days':
+        return (today - date) / (1000 * 60 * 60 * 24) <= 30;
+      default:
+        return true;
+    }
+  };
+
+  const filterByModality = (modality) => {
+    if (modalityFilter === 'all') return true;
+    return modality === modalityFilter;
+  };
+
   const loadDownloadedPatients = () => {
     const savedDownloadedPatients = localStorage.getItem('downloadedPatients');
     if (savedDownloadedPatients) {
       setDownloadedPatients(new Set(JSON.parse(savedDownloadedPatients)));
     }
   };
+
   const saveDownloadedPatients = (updatedSet) => {
     localStorage.setItem('downloadedPatients', JSON.stringify(Array.from(updatedSet)));
   };
@@ -114,6 +146,28 @@ const PatientTable = ({ searchQuery }) => {
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-xl text-center font-semibold mb-4">Patients</h1>
+      <div className="mb-4 flex gap-4 justify-center">
+        <select
+          className="px-4 py-2 border rounded-md"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+        >
+          <option value="all">All Dates</option>
+          <option value="2days">Last 2 Days</option>
+          <option value="7days">Last 7 Days</option>
+          <option value="30days">Last 30 Days</option>
+        </select>
+
+        <select
+          className="px-4 py-2 border rounded-md"
+          value={modalityFilter}
+          onChange={(e) => setModalityFilter(e.target.value)}
+        >
+          <option value="all">All Modalities</option>
+          <option value="CT">CT</option>
+          <option value="MRI">MRI</option>
+        </select>
+      </div>
 
       {loading && <p className="text-center">Loading patients...</p>}
       {error && <p className="text-red-500 text-center">{error}</p>}
@@ -127,7 +181,7 @@ const PatientTable = ({ searchQuery }) => {
                 <th className="py-2 px-3 border-b text-sm font-medium">Age</th>
                 <th className="py-2 px-3 border-b text-sm font-medium">Gender</th>
                 <th className="py-2 px-3 border-b text-sm font-medium">Number Of Images</th>
-                <th className='py-2 px-3 border-b text-sm font-medium'>Modality</th>
+                <th className="py-2 px-3 border-b text-sm font-medium">Modality</th>
                 <th className="py-2 px-3 border-b text-sm font-medium">Receiving Date & Time</th>
                 <th className="py-2 px-3 border-b text-sm font-medium">Actions</th>
               </tr>
@@ -155,8 +209,6 @@ const PatientTable = ({ searchQuery }) => {
                     >
                       Generate Report
                     </button>
-                  </td>
-                  <td className="py-2 px-3 border-b text-sm">
                     <button
                       className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
                       onClick={() => handleaudio(patient)}
@@ -168,24 +220,6 @@ const PatientTable = ({ searchQuery }) => {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Progress Modal */}
-      {downloadProgress !== null && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-            <h2 className="text-lg font-semibold mb-4">Downloading DICOM Files</h2>
-            <p className="mb-2">Download progress: {downloadProgress}%</p>
-            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-              <div className="bg-blue-500 h-4 rounded-full" style={{ width: `${downloadProgress}%` }} />
-            </div>
-            {downloadProgress === 100 ? (
-              <p className="text-green-500">Download complete!</p>
-            ) : (
-              <p>Downloading...</p>
-            )}
-          </div>
         </div>
       )}
     </div>
