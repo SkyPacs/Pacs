@@ -1,115 +1,39 @@
-import FormData from 'form-data';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import unzipper from 'unzipper';
 import axios from 'axios';
 import dicomParser from 'dicom-parser';
+import FormData from 'form-data';
+import moment from 'moment';
 import DicomFile from '../models/dicomFileModel.js';
 import Patient from '../models/patientModel.js';
-import AdmZip from 'adm-zip';
-import { Buffer } from 'buffer'; 
-import moment from 'moment';
-// export const createPatient = async (req, res) => {
-//   try {
-//     const { name, age, gender, medicalHistory } = req.body;
-//     if (!name || !age || !gender) {
-//       return res.status(400).json({ message: "Name, age, and gender are required." });
-//     }
-//     const newPatient = new Patient({
-//       name,
-//       age,
-//       gender,
-//       medicalHistory,
-//       dicomFiles: [],
-//       receivingDate: new Date(),
-//     });
-//     const savedPatient = await newPatient.save();
-//     if (req.file) {
-//       const dicomFiles = [];
-//       const zipPath = req.file.path;
-//       const extractPath = path.join('uploads', 'dicom', savedPatient._id.toString());
-//       if (!fs.existsSync(extractPath)) {
-//         fs.mkdirSync(extractPath, { recursive: true });
-//       }
-//       fs.createReadStream(zipPath)
-//         .pipe(unzipper.Parse())
-//         .on('entry', async (entry) => {
-//           const fileName = entry.path;
-//           const fileType = entry.type;
-//           const filePath = path.join(extractPath, fileName);
-//           if (fileType === 'File' && fileName.endsWith('.dcm')) {
-//             entry.pipe(fs.createWriteStream(filePath));
-//             const dicomFile = new DicomFile({
-//               filePath,
-//               patient: savedPatient._id,
-//             });
-//             const savedDicomFile = await dicomFile.save();
-//             dicomFiles.push(savedDicomFile._id);
-//           } else {
-//             entry.autodrain();
-//           }
-//         })
-//         .on('error', (error) => {
-//           console.error('Error during ZIP extraction:', error);
-//           res.status(500).json({ message: 'Error processing ZIP file.' });
-//         })
-//         .promise()
-//         .then(async () => {
-//           savedPatient.dicomFiles.push(...dicomFiles);
-//           await savedPatient.save();
-//           fs.unlinkSync(zipPath);
 
-//           res.status(201).json({
-//             message: 'Patient created and DICOM files uploaded successfully',
-//             patient: savedPatient,
-//             dicomFiles,
-//           });
-//         })
-//         .catch((error) => {
-//           console.error('Error after ZIP extraction:', error);
-//           res.status(500).json({ message: error.message });
-//         });
-//     } else {
-//       res.status(201).json({
-//         message: 'Patient created successfully, no DICOM files uploaded',
-//         patient: savedPatient,
-//       });
-//     }
-//   } catch (error) {
-//     console.error('Error creating patient:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
+const FINAL_UPLOAD_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'uploads', 'completed');
+if (!fs.existsSync(FINAL_UPLOAD_DIR)) {
+  fs.mkdirSync(FINAL_UPLOAD_DIR, { recursive: true });
+  console.log(`Directory created: ${FINAL_UPLOAD_DIR}`);
+}
 
 export const handleDicomFileUpload = async (req, res) => {
   try {
-    const zipFile = req.file;
-    console.log('Received ZIP file:', zipFile);
+    const { isComplete, fileName, chunkDir } = req.uploadInfo;
 
-    if (!zipFile) {
-      console.error('No file uploaded');
-      return res.status(400).json({ message: 'No file uploaded' });
+    if (!isComplete) {
+      return res.status(200).json({ message: 'Chunk uploaded successfully.' });
     }
-
-    const zip = new AdmZip(zipFile.buffer);
-    const zipEntries = zip.getEntries();
-
-    // Validate ZIP entries
-    if (zipEntries.length === 0) {
-      console.error('No files found in the ZIP archive');
-      return res.status(400).json({ message: 'No files found in the ZIP archive' });
-    }
-
+    const finalZipPath = path.join(FINAL_UPLOAD_DIR, `${fileName}.zip`);
+    const chunkFiles = (await fs.promises.readdir(chunkDir))
+      .sort((a, b) => parseInt(a.split('_')[1], 10) - parseInt(b.split('_')[1], 10))
+      .map((chunk) => fs.promises.readFile(path.join(chunkDir, chunk)));
+    const combinedBuffer = Buffer.concat(await Promise.all(chunkFiles));
+    await fs.promises.writeFile(finalZipPath, combinedBuffer);
+    const zipStream = fs.createReadStream(finalZipPath).pipe(unzipper.Parse({ forceStream: true }));
     const dicomPromises = [];
 
-    for (const entry of zipEntries) {
-      if (!entry.isDirectory) {
-        const dicomBuffer = entry.getData();
-        const dicomFileName = entry.entryName;
-        console.log('Processing DICOM file:', dicomFileName);
-
-        if (!Buffer.isBuffer(dicomBuffer)) {
-          console.error('dicomBuffer is not a Buffer:', dicomBuffer);
-          return res.status(400).json({ message: 'Uploaded file is not a valid Buffer' });
-        }
-
+    for await (const entry of zipStream) {
+      if (entry.type === 'File') {
+        const dicomBuffer = await entry.buffer();
         try {
           const dataSet = dicomParser.parseDicom(dicomBuffer);
           const PatientID = dataSet.string('x00100020');
@@ -123,30 +47,10 @@ export const handleDicomFileUpload = async (req, res) => {
           const seriesInstanceUID = dataSet.string('x0020000e');
           const sopInstanceUID = dataSet.string('x00080018');
           const PatientAge = dataSet.string('x00101010');
-          console.log('PatientAge:', PatientAge);
-          // Parse dates and calculate age
-          // const PatientBirthDate = PatientBirthDateStr ? moment(PatientBirthDateStr, 'YYYYMMDD').toDate() : null;
-           const StudyDate = StudyDateStr ? moment(StudyDateStr, 'YYYYMMDD').toDate() : null;
-          // const age = PatientBirthDate ? moment().diff(moment(PatientBirthDate), 'years') : null;
-
-          console.log('Extracted metadata:', {
-            PatientID,
-            PatientName,
-            //PatientBirthDate,
-            PatientSex,
-            StudyDate,
-            StudyTime,
-            Modality,
-            PatientAge,
-            studyInstanceUID,
-            seriesInstanceUID,
-            sopInstanceUID,
-          });
-
-          // Create FormData and append the DICOM file for Orthanc
+          const StudyDate = StudyDateStr ? moment(StudyDateStr, 'YYYYMMDD').toDate() : null;
           const formData = new FormData();
           formData.append('file', dicomBuffer, {
-            filename: dicomFileName,
+            filename: entry.path,
             contentType: 'application/dicom',
           });
 
@@ -162,7 +66,6 @@ export const handleDicomFileUpload = async (req, res) => {
             console.log('Orthanc patients:', patientIds);
             const orthancPatientId = patientIds[patientIds.length - 1];
             console.log('Orthanc patient ID:', orthancPatientId);
-            // Upsert patient data
             let patient = await Patient.findOne({ orthancPatientId });
 
             if (!patient) {
@@ -201,7 +104,6 @@ export const handleDicomFileUpload = async (req, res) => {
               patientId: patient._id,
               PatientID,
               patientName: PatientName,
-              // patientBirthDate: PatientBirthDate,
               patientSex: PatientSex,
               studyDate: StudyDate,
               studyTime: StudyTime,
@@ -211,9 +113,7 @@ export const handleDicomFileUpload = async (req, res) => {
               sopInstanceUID,
             });
             const savedDicomFile = await newDicomFile.save();
-            dicomPromises.push(savedDicomFile); // Save promise to array
-
-            // Link DICOM file to the patient
+            dicomPromises.push(savedDicomFile);
             patient.dicomFiles.push(savedDicomFile._id);
             await patient.save();
             console.log('DICOM file associated with patient:', savedDicomFile._id);
@@ -229,7 +129,10 @@ export const handleDicomFileUpload = async (req, res) => {
     // Wait for all DICOM files to be saved
     await Promise.all(dicomPromises);
     console.log('All DICOM files saved successfully.');
-
+    await fs.promises.rmdir(chunkDir, { recursive: true });
+    console.log(`Chunk directory ${chunkDir} deleted.`);
+    await fs.promises.unlink(finalZipPath);
+    console.log(`ZIP file ${finalZipPath} deleted.`);
     return res.status(201).json({ message: 'DICOM files uploaded and metadata saved successfully.' });
 
   } catch (error) {
@@ -239,7 +142,6 @@ export const handleDicomFileUpload = async (req, res) => {
 };
 
 
-
 export const getAllPatientsWithDicomMetadata = async (req, res) => {
   try {
     const patients = await Patient.find().populate('dicomFiles'); 
@@ -247,6 +149,7 @@ export const getAllPatientsWithDicomMetadata = async (req, res) => {
     if (!patients || patients.length === 0) {
       return res.status(404).json({ message: 'No patients found.' });
     }
+
     // Prepare the response data
     const patientData = patients.map(patient => ({
       orthancPatientId: patient.orthancPatientId,
@@ -255,9 +158,9 @@ export const getAllPatientsWithDicomMetadata = async (req, res) => {
       age: patient.PatientAge,
       gender: patient.gender,
       receivingDate: patient.receivingDate,
-      studyInstanceUID:patient.studyInstanceUID,
-      seriesInstanceUID:patient.seriesInstanceUID,
-      sopInstanceUID:patient.sopInstanceUID,
+      studyInstanceUID: patient.studyInstanceUID,
+      seriesInstanceUID: patient.seriesInstanceUID,
+      sopInstanceUID: patient.sopInstanceUID,
       dicomCount: patient.dicomFiles.length, 
       dicomFiles: patient.dicomFiles.map(dicomFile => ({
         dicomInstanceId: dicomFile.dicomInstanceId,
@@ -277,46 +180,3 @@ export const getAllPatientsWithDicomMetadata = async (req, res) => {
   }
 };
 
-export const searchPatientByName = async (req, res) => {
-  try {
-    const { name } = req.query;
-    if (!name) {
-      return res.status(400).json({ message: "Patient name is required." });
-    }
-    const patient = await Patient.findOne({ name: { $regex: name, $options: 'i' } }).populate('dicomFiles');
-    if (!patient) {
-      return res.status(404).json({ message: "Patient not found." });
-    }
-    res.status(200).json({
-      success: true,
-      message: "Patient found.",
-      patient,
-    });
-  } catch (error) {
-    console.error("Error searching patient:", error.message);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const deletePatient = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      return res.status(404).json({ message: "Patient not found." });
-    }
-    await DicomFile.deleteMany({ patient: id });
-    await Patient.findByIdAndDelete(id);
-    res.status(200).json({ message: "Patient deleted successfully." });
-  }
-  catch (error) {
-    console.error("Error deleting patient:", error.message);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-}

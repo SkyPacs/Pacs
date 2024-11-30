@@ -1,50 +1,57 @@
 import multer from 'multer';
-import unzipper from 'unzipper';
-import path from 'path';
 import fs from 'fs';
-import stream from 'stream';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const CHUNK_UPLOAD_DIR = path.join(__dirname, 'uploads', 'chunks');
+const FINAL_UPLOAD_DIR = path.join(__dirname, 'uploads', 'completed');
+
+// Ensure directories exist
+fs.mkdirSync(CHUNK_UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(FINAL_UPLOAD_DIR, { recursive: true });
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage }).single('dicomFile'); 
-export async function handleDicomFileUpload(req, res) {
-    upload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).send({ message: 'Error uploading file', error: err });
-        }
-        if (!req.file || req.file.mimetype !== 'application/zip') {
-            return res.status(400).send({ message: 'Please upload a valid ZIP file' });
-        }
+const upload = multer({ storage }).single('chunk');
 
-        try {
-            const zipBuffer = req.file.buffer;
-            const zipDir = path.join(__dirname, 'uploads', `${Date.now()}/`);
-            await fs.promises.mkdir(zipDir, { recursive: true }); 
-            const unzipStream = unzipper.Extract({ path: zipDir });
-            const bufferStream = new stream.PassThrough();
-            bufferStream.end(zipBuffer);
-            bufferStream.pipe(unzipStream);
-            unzipStream.on('close', async () => {
-                const extractedFiles = await fs.promises.readdir(zipDir);
-                console.log('Extracted files:', extractedFiles);
-                for (const file of extractedFiles) {
-                    const filePath = path.join(zipDir, file);
-                    console.log('Processing DICOM file:', filePath);
-                }
+const uploadDicomFile = async (req, res, next) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error('Error uploading chunk:', err);
+      return res.status(400).send({ message: 'Error uploading chunk', error: err });
+    }
 
-                res.status(200).send({ message: 'DICOM files uploaded and processed successfully' });
-            });
+    try {
+      const { fileName, chunkIndex, totalChunks } = req.body;
 
-            unzipStream.on('error', (error) => {
-                console.error('Error unzipping files:', error);
-                res.status(500).send({ message: 'Error processing ZIP file' });
-            });
-        } catch (error) {
-            console.error('Error processing uploaded file:', error);
-            res.status(500).send({ message: 'Error processing uploaded file' });
-        }
-    });
-}
-const uploadDicomFile = upload;
+      if (!fileName || chunkIndex === undefined || !totalChunks) {
+        return res.status(400).send({ message: 'Missing required fields' });
+      }
+
+      const chunkDir = path.join(CHUNK_UPLOAD_DIR, fileName);
+      await fs.promises.mkdir(chunkDir, { recursive: true });
+      const chunkPath = path.join(chunkDir, `chunk_${chunkIndex}`);
+      await fs.promises.writeFile(chunkPath, req.file.buffer);
+
+      if (parseInt(chunkIndex, 10) + 1 === parseInt(totalChunks, 10)) {
+        req.uploadInfo = { isComplete: true, fileName, chunkDir };
+      } else {
+        req.uploadInfo = { isComplete: false };
+      }
+      next();
+    } catch (error) {
+      console.error('Error handling chunk upload:', error);
+      next(error);
+    }
+  });
+};
 
 export default uploadDicomFile;
+
+
+
+
+
 

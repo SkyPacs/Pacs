@@ -6,7 +6,7 @@ import upload from '../middlewares/upload.js';
 const router = express.Router();
 
 router.get('/:patientID/audio', getAudioNotes);
-router.post('/:patientID/audio', upload.single('audioFile'), saveAudioNote); // Use multer for 'audioFile'
-router.get('/audio/:noteId/stream', streamAudio); // Route for streaming audio
+router.post('/:patientID/audio', upload.single('audioFile'), saveAudioNote);
+router.get('/audio/:noteId/stream', streamAudio);
 
 export default router;

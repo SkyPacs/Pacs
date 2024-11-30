@@ -259,6 +259,7 @@ const PatientTable = ({ searchQuery }) => {
 
     try {
       const response = await axios.get('/api/patients');
+      console.log(response);
       if (!Array.isArray(response.data.data)) {
         console.error('Expected an array but received:', response.data.data);
         setError('Unexpected response format');
