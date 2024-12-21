@@ -29,7 +29,6 @@ const App = () => {
             <Route path="/register" element={<AdminRegister />} />
             <Route path="/" element={<PatientTable searchQuery={searchQuery} />} />
             <Route path="/report" element={<ReportPage />} />
-            <Route path="/create-patient" element={<CreatePatient />} />
             <Route path='/admin-dashboard' element={<AdminDashboard />} />
             <Route path="/audio" element={<AudioRecorderComponent />} />
             <Route path="*" element={<div className="text-center text-red-600">Page Not Found</div>} />
