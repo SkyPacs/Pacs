@@ -265,14 +265,6 @@ const PatientTable = ({ searchQuery }) => {
         setError('Unexpected response format');
         return;
       }
-
-      // const filteredPatients = response.data.data.filter((patient) => {
-      //   const matchesSearchQuery = patient.patientName.toLowerCase().includes(searchQuery.toLowerCase());
-      //   const matchesDateFilter = filterByDate(patient.receivingDate);
-      //   const matchesModalityFilter = filterByModality(patient.dicomFiles[0].modality);
-
-      //   return matchesSearchQuery && matchesDateFilter && matchesModalityFilter;
-      // });
       const filteredPatients = response.data.data.filter((patient) => {
                 const matchesSearchQuery = patient.patientName.toLowerCase().includes(searchQuery.toLowerCase());
                 const matchesNameFilter = patient.patientName.toLowerCase().includes(nameFilter.toLowerCase());
@@ -280,8 +272,6 @@ const PatientTable = ({ searchQuery }) => {
                 const matchesModalityFilter = filterByModality(patient.dicomFiles[0].modality);
                 const matchesCustomDateFilter = filterByCustomDate(patient.receivingDate);
                 const matchesOnDateFilter = filterByOnDate(patient.receivingDate); // New filter by On Date
-
-        
                 return matchesSearchQuery && matchesNameFilter && matchesDateFilter && matchesModalityFilter && matchesCustomDateFilter && matchesOnDateFilter;
               });
 
@@ -396,6 +386,10 @@ const PatientTable = ({ searchQuery }) => {
   const handleaudio = (patient) => {
     navigate(`/audio`, { state: { patient } });
   };
+  const viewImage = (studyInstanceUID) => {
+    const viewUrl = `https://orthanc.skypacs.in/stone-webviewer/index.html?study=${studyInstanceUID}`;
+    window.open(viewUrl, '_blank');
+  };
 
   useEffect(() => {
     if (downloadComplete) {
@@ -482,8 +476,7 @@ const PatientTable = ({ searchQuery }) => {
           onClick={() => setApplyFilter((prev) => !prev)}
         >
           Apply
-        </button>
-        
+        </button>  
       </div>
 
       {loading && <p className="text-center">Loading patients...</p>}
@@ -520,6 +513,11 @@ const PatientTable = ({ searchQuery }) => {
                   <td className="py-2 px-3 border-b text-sm">{patient.dicomFiles[0].modality}</td>
                   <td className="py-2 px-3 border-b text-sm">{formatDateTime(patient.receivingDate)}</td>
                   <td className="py-2 px-3 border-b text-sm">
+                    <button
+                     onClick={() => viewImage(patient.studyInstanceUID)}
+                     className='bg-blue-500 text-white px-3 py-1 rounded mr-2'>
+                      View Image
+                    </button>
                     <button
                       className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
                       onClick={() => handleGenerateReport(patient)}
