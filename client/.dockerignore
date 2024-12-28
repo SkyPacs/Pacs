@@ -1,0 +1,29 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+
+# Build output
+dist
+build
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# IDE or Editor specific files
+.vscode
+.idea
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Other directories/files to ignore
+coverage
+*.tgz
