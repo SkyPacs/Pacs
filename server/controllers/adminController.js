@@ -7,30 +7,22 @@ const generateToken = (id) => {
     expiresIn: '30d', 
   });
 };
-
 export const registerAdmin = async (req, res) => {
   const { name, email, password } = req.body;
-
   try {
     const adminExists = await Admin.findOne({ email });
-
     if (adminExists) {
       return res.status(400).json({ message: 'Admin already exists' });
     }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
     console.log('Hashed Password:', hashedPassword);
-
     const admin = new Admin({
       name,
       email,
       password: hashedPassword,
     });
-
     const savedAdmin = await admin.save();
-
     res.status(201).json({
       message: 'Admin registered successfully',
       token: generateToken(savedAdmin._id),
@@ -79,5 +71,3 @@ export const logout = (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
-
-

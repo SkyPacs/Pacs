@@ -8,8 +8,6 @@ const __dirname = path.dirname(__filename);
 
 const CHUNK_UPLOAD_DIR = path.join(__dirname, 'uploads', 'chunks');
 const FINAL_UPLOAD_DIR = path.join(__dirname, 'uploads', 'completed');
-
-// Ensure directories exist
 fs.mkdirSync(CHUNK_UPLOAD_DIR, { recursive: true });
 fs.mkdirSync(FINAL_UPLOAD_DIR, { recursive: true });
 
@@ -47,11 +45,4 @@ const uploadDicomFile = async (req, res, next) => {
     }
   });
 };
-
 export default uploadDicomFile;
-
-
-
-
-
-

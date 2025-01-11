@@ -1,4 +1,3 @@
-// models/audioModel.js
 import mongoose from 'mongoose';
 
 const audioSchema = new mongoose.Schema({
@@ -7,11 +6,11 @@ const audioSchema = new mongoose.Schema({
     required: true,
   },
   data: {
-    type: Buffer,  // Store binary data of the audio
+    type: Buffer,  
     required: true,
   },
   contentType: {
-    type: String,  // Store the MIME type of the audio file
+    type: String,  
     required: true,
   },
   createdAt: {
