@@ -48,25 +48,25 @@ services:
     networks:
       - pacs
 
-  minio:
-    image: minio/minio
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio-data:/data
-    environment:
-      - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=12345678
-    command: server /data --console-address ":9001"
-    networks:
-      - pacs
-    restart: unless-stopped
+  # minio:
+  #   image: minio/minio
+  #   container_name: minio
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - minio-data:/data
+  #   environment:
+  #     - MINIO_ROOT_USER=admin
+  #     - MINIO_ROOT_PASSWORD=12345678
+  #   command: server /data --console-address ":9001"
+  #   networks:
+  #     - pacs
+  #   restart: unless-stopped
 
 volumes:
   orthanc_data:
-  minio-data:
+  # minio-data:
 
 networks:
   pacs:
