@@ -7,7 +7,7 @@
   "MaximumPatientCount": 0,
   "MaximumStorageMode": "Recycle",
   "MaximumStorageCacheSize": 128,
-  "LuaScripts": [],
+  "LuaScripts": [ "/etc/orthanc/LuaScripts/notification.lua" ],
   "LuaHeartBeatPeriod": 0,
   "Plugins": [
    "/usr/share/orthanc/plugins", 
@@ -102,7 +102,7 @@
   "MediaArchiveSize": 1,
   "StorageAccessOnFind": "Always",
   "MetricsEnabled": true,
-  "ExecuteLuaEnabled": false,
+  "ExecuteLuaEnabled": true,
   "RestApiWriteToFileSystemEnabled": false,
   "HttpRequestTimeout": 30,
   "DefaultPrivateCreator": "",
