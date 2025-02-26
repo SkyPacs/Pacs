@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   client:
@@ -21,7 +21,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      - MONGO_URI=mongodb+srv://debashispani61:Skull%403434@cluster0.mmncbxr.mongodb.net/CustomPACS?retryWrites=true
+      - MONGO_URL=mongodb+srv://debashispani61:Skull%403434@cluster0.mmncbxr.mongodb.net
+      - DB_NAME=CustomPACS
       - JWT_SECRET=ifabiaviabfi73828g
       - PORT=5000
       - ORTHANC_URL=http://orthanc:8042
@@ -43,7 +44,8 @@ services:
       - "4242:4242"  
     volumes:
       - orthanc_data:/var/lib/orthanc/db 
-      - /home/aarush/Pacs/orthanc_config.json:/etc/orthanc/orthanc.json
+      - ./orthanc_config.json:/etc/orthanc/orthanc.json
+      - ./LuaScripts:/etc/orthanc/LuaScripts
     restart: unless-stopped
     networks:
       - pacs
@@ -66,7 +68,7 @@ services:
 
 volumes:
   orthanc_data:
-  # minio-data:
+#   minio-data:
 
 networks:
   pacs:
