@@ -10,19 +10,26 @@ import cookieParser from 'cookie-parser';
 
 const app = express()
 dotenv.config()
+
 app.use(express.json())
 app.use(cookieParser());
-app.use(cors({origin:"*"})) 
-app.use('/api',uploadRoutes)
-app.use('/api/admin',adminRoutes)
-app.use('/api',templateRoutes)
-app.use('/api',audioRoutes)
+app.use(cors({ origin: "*" }));
+
+// Add Hello route
+app.get("/", (req, res) => {
+    res.send("Hello, World!");
+});
+
+app.use('/api', uploadRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api', templateRoutes);
+app.use('/api', audioRoutes);
 app.use('/uploads', express.static('uploads'));
-connectDb().then(()=>{
-    app.listen(5000,()=>{
-        console.log("Server is running on port 5000")
-    })
-})
-.catch((err)=>{
-    console.log("MongoDB connection failed",err)
-})
+
+connectDb().then(() => {
+    app.listen(5000, () => {
+        console.log("Server is running on port 5000");
+    });
+}).catch((err) => {
+    console.log("MongoDB connection failed", err);
+});

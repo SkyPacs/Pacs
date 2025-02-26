@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18 AS build
+FROM node:19 AS build
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Production stage (smaller, optimized)
-FROM node:18-alpine AS production
+FROM node:19-alpine AS production
 
 WORKDIR /app
 
@@ -30,4 +30,4 @@ COPY . .
 EXPOSE 5000
 
 # Use npm start to run the application
-CMD ["npm", "start"]
+CMD [ "npm", "run", "dev" ]
