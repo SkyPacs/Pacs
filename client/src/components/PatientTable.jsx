@@ -387,7 +387,7 @@ const PatientTable = ({ searchQuery }) => {
     navigate(`/audio`, { state: { patient } });
   };
   const viewImage = (studyInstanceUID) => {
-    const viewUrl = `https://orthanc.skypacs.in/stone-webviewer/index.html?study=${studyInstanceUID}`;
+    const viewUrl = `http://skypacs.in:8042/stone-webviewer/index.html?study=${studyInstanceUID}`;
     window.open(viewUrl, '_blank');
   };
 
