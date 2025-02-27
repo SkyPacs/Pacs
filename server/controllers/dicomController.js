@@ -37,7 +37,7 @@ export const processDicomImagesFromOrthanc = async (req, res) => {
         const PatientSex = metadata['0010,0040']?.Value?.[0] || 'Unknown';
         const StudyDateStr = metadata['0008,0020']?.Value?.[0];
         const StudyTime = metadata['0008,0030']?.Value?.[0];
-        const Modality = metadata['0008,0060']?.Value?.[0];
+        const Modality = metadata['0008,0060']?.Value;
         const studyInstanceUID = metadata['0020,000d']?.Value;
         const seriesInstanceUID = metadata['0020,000e']?.Value;
         const sopInstanceUID = metadata['0008,0018']?.Value;
