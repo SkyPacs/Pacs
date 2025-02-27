@@ -1,6 +1,6 @@
 function OnStoredInstance(instanceId, tags, metadata)
     print('onStoredInstance function has been called')
-    local url = "http://localhost:5000/api/process-dicom-from-orthanc"
+    local url = "http://skypacs.in:5000/api/process-dicom-from-orthanc"
 
     local payload = "{}"  
     local headers = {
