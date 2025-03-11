@@ -256,63 +256,51 @@ const PatientTable = ({ searchQuery }) => {
   const fetchPatients = async () => {
     setLoading(true);
     setError(null);
+    
     try {
         const response = await axios.get('/api/patients');
+
         if (!Array.isArray(response.data.data)) {
             console.error('Expected an array but received:', response.data.data);
             setError('Unexpected response format');
             return;
         }
+
         const filteredPatients = response.data.data.filter((patient) => {
             const matchesSearchQuery = patient.patientName.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesNameFilter = patient.patientName.toLowerCase().includes(nameFilter.toLowerCase());
             const matchesDateFilter = filterByDate(patient.receivingDate);
-            const matchesModalityFilter = filterByModality(patient.dicomFiles[0]?.modality || ''); // Handle missing modality
+            const matchesModalityFilter = filterByModality(patient.dicomFiles[0]?.modality || '');
             const matchesCustomDateFilter = filterByCustomDate(patient.receivingDate);
             const matchesOnDateFilter = filterByOnDate(patient.receivingDate);
-            return matchesSearchQuery && matchesNameFilter && matchesDateFilter && matchesModalityFilter && matchesCustomDateFilter && matchesOnDateFilter;
+
+            return (
+                matchesSearchQuery &&
+                matchesNameFilter &&
+                matchesDateFilter &&
+                matchesModalityFilter &&
+                matchesCustomDateFilter &&
+                matchesOnDateFilter
+            );
         });
-        console.log(filteredPatients);
+
         if (filteredPatients.length === 0) {
             setError('No patients in the database.');
+        } else {
+            setError(null); // Reset error if patients exist
         }
-        setPatients(filteredPatients);
-        const response = await axios.get('/api/patients');
-        if (!Array.isArray(response.data.data)) {
-            console.error('Expected an array but received:', response.data.data);
-            setError('Unexpected response format');
-            return;
-        }
-        const filteredPatients = response.data.data.filter((patient) => {
-            const matchesSearchQuery = patient.patientName.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesNameFilter = patient.patientName.toLowerCase().includes(nameFilter.toLowerCase());
-            const matchesDateFilter = filterByDate(patient.receivingDate);
-            const matchesModalityFilter = filterByModality(patient.dicomFiles[0]?.modality || ''); // Handle missing modality
-            const matchesCustomDateFilter = filterByCustomDate(patient.receivingDate);
-            const matchesOnDateFilter = filterByOnDate(patient.receivingDate);
-            return matchesSearchQuery && matchesNameFilter && matchesDateFilter && matchesModalityFilter && matchesCustomDateFilter && matchesOnDateFilter;
-        });
-        console.log(filteredPatients);
-        if (filteredPatients.length === 0) {
-            setError('No patients in the database.');
-        }
+
         setPatients(filteredPatients);
     } catch (error) {
-      if (error.response?.status === 404) {
-        setError('No patients in the database.');
-    } else {
-        setError('Error fetching patient data. Please try again later.');
-    }
-      if (error.response?.status === 404) {
-        setError('No patients in the database.');
-    } else {
-        setError('Error fetching patient data. Please try again later.');
-    }
+        if (error.response?.status === 404) {
+            setError('No patients in the database.');
+        } else {
+            setError('Error fetching patient data. Please try again later.');
+        }
     } finally {
         setLoading(false);
-        setLoading(false);
     }
-  };
+};
   const filterByDate = (dateString) => {
     if (dateFilter === 'all') return true;
     
@@ -434,88 +422,109 @@ const PatientTable = ({ searchQuery }) => {
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-xl text-center font-semibold mb-4">Patients</h1>
-      <div className="mb-4 flex gap-4 justify-center">
+      
+      <div className="mb-4 flex gap-4 justify-center flex-wrap">
+        {/* Patient Name Input */}
         <div>
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nameFilter">Patient Name</label>
-      <input
-          type="text"
-          className="px-4 py-2 border rounded-md"
-          placeholder="Name"
-          value={nameFilter}
-          onChange={(e) => setNameFilter(e.target.value)}
-        />
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nameFilter">
+            Patient Name
+          </label>
+          <input
+            type="text"
+            id="nameFilter"
+            className="px-4 py-2 border rounded-md"
+            placeholder="Name"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+          />
         </div>
+  
+        {/* On Date Input */}
         <div>
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nameFilter">On Date</label>
-        <input
-          type="date"
-          className="px-4 py-2 border rounded-md"
-          placeholder="On Date"
-          value={onDate}
-          onChange={(e) => setOnDate(e.target.value)}
-        />
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="onDate">
+            On Date
+          </label>
+          <input
+            type="date"
+            id="onDate"
+            className="px-4 py-2 border rounded-md"
+            value={onDate}
+            onChange={(e) => setOnDate(e.target.value)}
+          />
         </div>
+  
+        {/* From Date Input */}
         <div>
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nameFilter">From Date</label>
-        <input
-          type="date"
-          className="px-4 py-2 border rounded-md"
-          placeholder='From Date'
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="fromDate">
+            From Date
+          </label>
+          <input
+            type="date"
+            id="fromDate"
+            className="px-4 py-2 border rounded-md"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
         </div>
+  
+        {/* Till Date Input */}
         <div>
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nameFilter">Till Date</label>
-        <input
-          type="date"
-          className="px-4 py-2 border rounded-md"
-          placeholder='Till Date'
-          value={tillDate}
-          onChange={(e) => setTillDate(e.target.value)}
-        />
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="tillDate">
+            Till Date
+          </label>
+          <input
+            type="date"
+            id="tillDate"
+            className="px-4 py-2 border rounded-md"
+            value={tillDate}
+            onChange={(e) => setTillDate(e.target.value)}
+          />
         </div>
+  
+        {/* Date Filter Dropdown */}
         <div>
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nameFilter">Filter dates</label>
-        <select
-          className="px-4 py-2 border rounded-md"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-        >
-          <option value="all">All Dates</option>
-          <option value="2days">Last 2 Days</option>
-          <option value="7days">Last 7 Days</option>
-          <option value="30days">Last 30 Days</option>
-        </select>
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="dateFilter">
+            Filter dates
+          </label>
+          <select
+            id="dateFilter"
+            className="px-4 py-2 border rounded-md"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          >
+            <option value="all">All Dates</option>
+            <option value="2days">Last 2 Days</option>
+            <option value="7days">Last 7 Days</option>
+            <option value="30days">Last 30 Days</option>
+          </select>
         </div>
+  
+        {/* Modality Filter Dropdown */}
         <div>
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nameFilter">Modality</label>
-        <select
-          className="px-4 py-2 border rounded-md"
-          value={modalityFilter}
-          onChange={(e) => setModalityFilter(e.target.value)}
-        >
-          <option value="all">All Modalities</option>
-          <option value="CT">CT</option>
-          <option value="MRI">MRI</option>
-        </select>
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="modalityFilter">
+            Modality
+          </label>
+          <select
+            id="modalityFilter"
+            className="px-4 py-2 border rounded-md"
+            value={modalityFilter}
+            onChange={(e) => setModalityFilter(e.target.value)}
+          >
+            <option value="all">All Modalities</option>
+            <option value="CT">CT</option>
+            <option value="MRI">MRI</option>
+          </select>
         </div>
+  
+        {/* Apply Button */}
         <button
-             className="px-6 py-1.5 bg-blue-600 text-white font-semibold rounded-md shadow-md 
-             hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 active:scale-95"
-            onClick={() => setApplyFilter((prev) => !prev)} 
-           >
-           Apply
-         </button> 
+          className="px-6 py-1.5 bg-blue-600 text-white font-semibold rounded-md shadow-md 
+          hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 active:scale-95"
+          onClick={() => setApplyFilter((prev) => !prev)}
+        >
+          Apply
+        </button>
       </div>
-             className="px-6 py-1.5 bg-blue-600 text-white font-semibold rounded-md shadow-md 
-             hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 active:scale-95"
-            onClick={() => setApplyFilter((prev) => !prev)} 
-           >
-           Apply
-         </button> 
-      </div> 
-
       {loading && <p className="text-center">Loading patients...</p>}
       {error && <p className="text-red-500 text-center">{error}</p>}
 
