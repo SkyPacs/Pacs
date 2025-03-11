@@ -277,13 +277,39 @@ const PatientTable = ({ searchQuery }) => {
             setError('No patients in the database.');
         }
         setPatients(filteredPatients);
+        const response = await axios.get('/api/patients');
+        if (!Array.isArray(response.data.data)) {
+            console.error('Expected an array but received:', response.data.data);
+            setError('Unexpected response format');
+            return;
+        }
+        const filteredPatients = response.data.data.filter((patient) => {
+            const matchesSearchQuery = patient.patientName.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesNameFilter = patient.patientName.toLowerCase().includes(nameFilter.toLowerCase());
+            const matchesDateFilter = filterByDate(patient.receivingDate);
+            const matchesModalityFilter = filterByModality(patient.dicomFiles[0]?.modality || ''); // Handle missing modality
+            const matchesCustomDateFilter = filterByCustomDate(patient.receivingDate);
+            const matchesOnDateFilter = filterByOnDate(patient.receivingDate);
+            return matchesSearchQuery && matchesNameFilter && matchesDateFilter && matchesModalityFilter && matchesCustomDateFilter && matchesOnDateFilter;
+        });
+        console.log(filteredPatients);
+        if (filteredPatients.length === 0) {
+            setError('No patients in the database.');
+        }
+        setPatients(filteredPatients);
     } catch (error) {
       if (error.response?.status === 404) {
         setError('No patients in the database.');
     } else {
         setError('Error fetching patient data. Please try again later.');
     }
+      if (error.response?.status === 404) {
+        setError('No patients in the database.');
+    } else {
+        setError('Error fetching patient data. Please try again later.');
+    }
     } finally {
+        setLoading(false);
         setLoading(false);
     }
   };
@@ -475,6 +501,13 @@ const PatientTable = ({ searchQuery }) => {
         </select>
         </div>
         <button
+             className="px-6 py-1.5 bg-blue-600 text-white font-semibold rounded-md shadow-md 
+             hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 active:scale-95"
+            onClick={() => setApplyFilter((prev) => !prev)} 
+           >
+           Apply
+         </button> 
+      </div>
              className="px-6 py-1.5 bg-blue-600 text-white font-semibold rounded-md shadow-md 
              hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 active:scale-95"
             onClick={() => setApplyFilter((prev) => !prev)} 
