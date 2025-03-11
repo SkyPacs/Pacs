@@ -6,3 +6,5 @@ Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+storescu -v -aet MYSCU -aec ORTHANC 127.0.0.1 4242 "C:\Users\KIIT\Desktop\Ramakant Pradhan\cdacccc1\7aa1b8a\7aa1b8b"

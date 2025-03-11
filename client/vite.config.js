@@ -11,7 +11,7 @@ export default defineConfig({
     allowedHosts: ["skypacs.in"],
     proxy: {
       '/api': {
-        target: 'http://api:5000', 
+        target: 'http://localhost:5000', 
         changeOrigin: true,
         secure: false,
       }
