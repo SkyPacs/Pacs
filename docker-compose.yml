@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
     environment:
       - MONGO_URL=mongodb+srv://debashispani61:Skull%403434@cluster0.mmncbxr.mongodb.net
-      - DB_NAME=CustomPACS
+      - DB_NAME=Pacs_Prod
       - JWT_SECRET=ifabiaviabfi73828g
       - PORT=5000
       - ORTHANC_URL=http://orthanc:8042
