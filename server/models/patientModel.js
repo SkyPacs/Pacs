@@ -5,7 +5,6 @@ const patientSchema = new mongoose.Schema({
     PatientID: {
         type: String, 
         required: true,
-        unique: true 
     },
     orthancPatientId: {
         type: String,
