@@ -43,7 +43,9 @@ services:
       - "8042:8042"  
       - "4242:4242"  
     volumes:
-      - orthanc_data:/var/lib/orthanc/db 
+      - /home/aarush/docker_volumes/orthanc_data:/var/lib/orthanc/db
+      - /home/aarush/docker_volumes/orthanc_index:/var/lib/orthanc/db-index
+      - /home/aarush/docker_volumes/orthanc_logs:/var/log/orthanc 
       - ./orthanc_config.json:/etc/orthanc/orthanc.json
       - ./LuaScripts:/etc/orthanc/LuaScripts
     restart: unless-stopped
