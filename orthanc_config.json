@@ -6,16 +6,18 @@
   "MaximumStorageSize": 0,
   "MaximumPatientCount": 0,
   "MaximumStorageMode": "Recycle",
-  "MaximumStorageCacheSize": 128,
-  "LuaScripts": [ "/etc/orthanc/LuaScripts/notification.lua" ],
+  "MaximumStorageCacheSize": 512,
+  "LuaScripts": [
+    "/etc/orthanc/LuaScripts/notification.lua"
+  ],
   "LuaHeartBeatPeriod": 0,
   "Plugins": [
-   "/usr/share/orthanc/plugins", 
-   "/usr/local/share/orthanc/plugins"
+    "/usr/share/orthanc/plugins",
+    "/usr/local/share/orthanc/plugins"
   ],
-  "ConcurrentJobs": 2,
+  "ConcurrentJobs": 10,
   "JobsEngineThreadsCount": {
-    "ResourceModification": 1
+    "ResourceModification": 4
   },
   "HttpServerEnabled": true,
   "OrthancExplorerEnabled": true,
@@ -29,7 +31,8 @@
   "DicomCheckCalledAet": false,
   "DefaultEncoding": "Latin1",
   "AcceptedTransferSyntaxes": [
-    "1.2.840.10008.1.*"
+    "1.2.840.10008.1.2.1", 
+    "1.2.840.10008.1.2"
   ],
   "UnknownSopClassAccepted": false,
   "DicomScpTimeout": 30,
@@ -37,8 +40,7 @@
   "SslEnabled": false,
   "SslCertificate": "certificate.pem",
   "AuthenticationEnabled": false,
-  "RegisteredUsers": {
-  },
+  "RegisteredUsers": {},
   "HttpPort": 8042,
   "DicomPort": 4242,
   "EnableDicomWeb": true,
@@ -68,7 +70,7 @@
   "DicomEchoChecksFind": false,
   "DicomScuTimeout": 10,
   "DicomScuPreferredTransferSyntax": "1.2.840.10008.1.2.1",
-  "DicomThreadsCount": 4,
+  "DicomThreadsCount": 8,
   "OrthancPeers": {},
   "OrthancPeersInDatabase": false,
   "HttpProxy": "",
@@ -86,11 +88,11 @@
   "LogExportedResources": false,
   "LogDirectory": "/var/log/orthanc",
   "KeepAlive": true,
-  "KeepAliveTimeout": 1,
+  "KeepAliveTimeout": 5,
   "TcpNoDelay": true,
-  "HttpThreadsCount": 50,
+  "HttpThreadsCount": 100,
   "StoreDicom": true,
-  "DicomAssociationCloseDelay": 5,
+  "DicomAssociationCloseDelay": 2,
   "QueryRetrieveSize": 100,
   "CaseSensitivePN": false,
   "LoadPrivateDictionary": true,
@@ -112,11 +114,11 @@
   "IngestTranscodingOfUncompressed": true,
   "IngestTranscodingOfCompressed": true,
   "DicomLossyTranscodingQuality": 90,
-  "SyncStorageArea": true,
+  "SyncStorageArea": false,
   "MallocArenaMax": 5,
   "DeidentifyLogs": true,
   "DeidentifyLogsDicomVersion": "2023b",
-  "MaximumPduLength": 16384,
+  "MaximumPduLength": 65536,
   "CheckRevisions": false,
   "SynchronousZipStream": true,
   "ZipLoaderThreads": 0,
