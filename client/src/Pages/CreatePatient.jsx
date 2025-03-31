@@ -1,109 +1,75 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 
 const CreatePatient = () => {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [medicalHistory, setMedicalHistory] = useState('');
   const [dicomFile, setDicomFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+
+  const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB per chunk
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0] || null;
     setDicomFile(file);
-    console.log('Selected file:', file);
     if (file) {
       console.log('File name:', file.name);
       console.log('File size:', file.size);
-      console.log('File type:', file.type);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('Please log in to create a patient.');
-      return;
+    if (!dicomFile) return;
+
+    const totalChunks = Math.ceil(dicomFile.size / CHUNK_SIZE);
+    let uploadedSize = 0;
+
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, dicomFile.size);
+      const chunk = dicomFile.slice(start, end);
+
+      const formData = new FormData();
+      formData.append('chunk', chunk);
+      formData.append('fileName', dicomFile.name);
+      formData.append('chunkIndex', String(chunkIndex));
+      formData.append('totalChunks', String(totalChunks));
+
+      try {
+        await axios.post('/api/upload-dicom', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        uploadedSize += chunk.size;
+        setUploadProgress(Math.round((uploadedSize / dicomFile.size) * 100));
+      } catch (err) {
+        console.error('Error uploading chunk:', err);
+        setError('Failed to upload the file. Please try again.');
+        return;
+      }
     }
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('age', age);
-    formData.append('gender', gender);
-    formData.append('medicalHistory', medicalHistory);
-    if (dicomFile) {
-      formData.append('dicomZip', dicomFile);
-    }
-
-    try {
-      await axios.post('/api/patients', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      navigate('/');
-    } catch (error) {
-      console.error('Error creating patient:', error.response?.data);
-      setError('Failed to create patient. Please try again.');
-    }
+    console.log('File uploaded successfully');
+    setUploadProgress(100);
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white shadow-md rounded-lg">
-        <h1 className="text-2xl font-bold mb-6">Create Patient</h1>
+        <h1 className="text-2xl font-bold mb-6">Upload DICOM File</h1>
         {error && <p className="text-red-500 mb-4">{error}</p>}
+        {uploadProgress > 0 && (
+          <p className="text-gray-700 mb-4">
+            Upload Progress: {uploadProgress}%
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="age" className="block text-sm font-medium text-gray-700">Age</label>
-            <input
-              type="number"
-              id="age"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="gender" className="block text-sm font-medium text-gray-700">Gender</label>
-            <input
-              type="text"
-              id="gender"
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="medicalHistory" className="block text-sm font-medium text-gray-700">Medical History</label>
-            <textarea
-              id="medicalHistory"
-              value={medicalHistory}
-              onChange={(e) => setMedicalHistory(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              required
-            />
-          </div>
           <div className="mb-6">
-            <label htmlFor="dicomFile" className="block text-sm font-medium text-gray-700">Upload DICOM File</label>
+            <label htmlFor="dicomFile" className="block text-sm font-medium text-gray-700">
+              Upload DICOM File
+            </label>
             <input
               type="file"
               id="dicomFile"
@@ -116,7 +82,7 @@ const CreatePatient = () => {
             type="submit"
             className="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Create Patient
+            Upload
           </button>
         </form>
       </div>

@@ -6,7 +6,7 @@ const dicomFileSchema = new mongoose.Schema({
         ref: 'Patient',
         required: true,
     },
-    PatientID: { // Unique identifier for the patient
+    PatientID: { 
         type: String,
         required: true,
     },
@@ -30,9 +30,9 @@ const dicomFileSchema = new mongoose.Schema({
     modality: {
         type: String,
     },
-    studyInstanceUID: { type: String, required: true }, // New field
-    seriesInstanceUID: { type: String, required: true }, // New field
-    sopInstanceUID: { type: String, required: true }, // New field
+    studyInstanceUID: { type: String, required: true }, 
+    seriesInstanceUID: { type: String, required: true }, 
+    sopInstanceUID: { type: String, required: true }, 
 }, { timestamps: true });
 
 const DicomFile = mongoose.model('DicomFile', dicomFileSchema);

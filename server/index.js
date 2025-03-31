@@ -4,19 +4,32 @@ import express from "express"
 import cors from "cors"
 import uploadRoutes from "./routes/uploadRoutes.js"
 import adminRoutes from "./routes/adminRoutes.js"
+import templateRoutes from "./routes/templateRoutes.js"
+import audioRoutes from "./routes/audioRoutes.js"
 import cookieParser from 'cookie-parser';
+
 const app = express()
 dotenv.config()
+
 app.use(express.json())
 app.use(cookieParser());
-app.use(cors())
-app.use('/api',uploadRoutes)
-app.use('/api/admin',adminRoutes)
-connectDb().then(()=>{
-    app.listen(5000,()=>{
-        console.log("Server is running on port 5000")
-    })
-})
-.catch((err)=>{
-    console.log("MongoDB connection failed",err)
-})
+app.use(cors({ origin: "*" }));
+
+// Add Hello route
+app.get("/", (req, res) => {
+    res.send("Hello, World!");
+});
+
+app.use('/api', uploadRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api', templateRoutes);
+app.use('/api', audioRoutes);
+app.use('/uploads', express.static('uploads'));
+
+connectDb().then(() => {
+    app.listen(5000, () => {
+        console.log("Server is running on port 5000");
+    });
+}).catch((err) => {
+    console.log("MongoDB connection failed", err);
+});

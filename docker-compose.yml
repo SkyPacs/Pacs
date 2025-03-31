@@ -1,0 +1,57 @@
+
+services:
+  client:
+    container_name: client 
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${CLIENT_HOST_PORT}:5173" 
+    networks:
+      - ${NETWORK_NAME}
+    depends_on:
+      - api
+
+  api:
+    container_name: api 
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Use variables from .env file
+      - MONGO_URL=${MONGO_URL}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=${API_INTERNAL_PORT} 
+      - ORTHANC_URL=http://orthanc:8042
+    volumes:
+      - ./server:/app 
+      - /app/node_modules 
+    ports:
+      - "${API_HOST_PORT}:${API_INTERNAL_PORT}"
+    networks:
+      - ${NETWORK_NAME}
+    depends_on:
+      - orthanc
+
+  orthanc:
+    container_name: orthanc 
+    image: ${ORTHANC_IMAGE}
+    ports:
+      - "${ORTHANC_HTTP_HOST_PORT}:8042" 
+      - "${ORTHANC_DICOM_HOST_PORT}:4242"
+    volumes:
+      - ${ORTHANC_DATA_PATH}:/var/lib/orthanc/db
+      - ${ORTHANC_INDEX_PATH}:/var/lib/orthanc/db-index
+      - ${ORTHANC_LOGS_PATH}:/var/log/orthanc
+      - ${ORTHANC_CONFIG_PATH}:/etc/orthanc/orthanc.json
+      - ${ORTHANC_LUA_PATH}:/etc/orthanc/LuaScripts
+    restart: unless-stopped
+    networks:
+      - ${NETWORK_NAME}
+
+networks:
+  ${NETWORK_NAME}: 
+    driver: bridge

@@ -5,7 +5,6 @@ const patientSchema = new mongoose.Schema({
     PatientID: {
         type: String, 
         required: true,
-        unique: true 
     },
     orthancPatientId: {
         type: String,
@@ -15,9 +14,8 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    age: {
-        type: Number,
-        required: true
+    PatientAge: {
+        type: String,
     },
     gender: {
         type: String,
