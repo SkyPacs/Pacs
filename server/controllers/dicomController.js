@@ -32,11 +32,11 @@ export const processDicomImagesFromOrthanc = async (req, res) => {
       try {
         const metadataResponse = await axios.get(`${ORTHANC_URL}/instances/${instanceId}/tags`);
         const metadata = metadataResponse.data;
-        const PatientID = metadata['0010,0020']?.Value?.[0];
+        const PatientID = metadata['0010,0020']?.Value;
         const PatientName = metadata['0010,0010']?.Value || 'Unknown';
         const PatientSex = metadata['0010,0040']?.Value?.[0] || 'Unknown';
         const StudyDateStr = metadata['0008,0020']?.Value?.[0];
-        const StudyTime = metadata['0008,0030']?.Value?.[0];
+        const StudyTime = metadata['0008,0030']?.Value;
         const Modality = metadata['0008,0060']?.Value;
         const studyInstanceUID = metadata['0020,000d']?.Value;
         const seriesInstanceUID = metadata['0020,000e']?.Value;
@@ -87,6 +87,7 @@ export const processDicomImagesFromOrthanc = async (req, res) => {
           await dicomFile.save();
           patient.dicomFiles.push(dicomFile._id);
           await patient.save();
+          console.log(patient.dicomFiles.length)
           console.log(`DICOM file metadata saved for patient: ${PatientName}`);
         } catch (dbError) {
           console.error('Error saving DICOM file to database:', dbError.message);
