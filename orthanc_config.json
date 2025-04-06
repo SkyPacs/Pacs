@@ -15,7 +15,7 @@
     "/usr/share/orthanc/plugins",
     "/usr/local/share/orthanc/plugins"
   ],
-  "ConcurrentJobs": 20,
+  "ConcurrentJobs": 10,
   "JobsEngineThreadsCount": {
     "ResourceModification": 4
   },
@@ -65,14 +65,12 @@
   "DicomAlwaysAllowGet": false,
   "DicomAlwaysAllowMove": false,
   "DicomCheckModalityHost": false,
-  "DicomModalities" : {
-  "EHPGMRI" : [ "106.219.171.71", 104 ]
-},
+  "DicomModalities": {},
   "DicomModalitiesInDatabase": false,
   "DicomEchoChecksFind": false,
   "DicomScuTimeout": 10,
   "DicomScuPreferredTransferSyntax": "1.2.840.10008.1.2.1",
-  "DicomThreadsCount": 16,
+  "DicomThreadsCount": 8,
   "OrthancPeers": {},
   "OrthancPeersInDatabase": false,
   "HttpProxy": "",
@@ -92,7 +90,7 @@
   "KeepAlive": true,
   "KeepAliveTimeout": 5,
   "TcpNoDelay": true,
-  "HttpThreadsCount": 200,
+  "HttpThreadsCount": 100,
   "StoreDicom": true,
   "DicomAssociationCloseDelay": 2,
   "QueryRetrieveSize": 100,
