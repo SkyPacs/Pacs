@@ -1,42 +1,71 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import { SignedIn, SignedOut, RedirectToSignIn, SignIn, useAuth } from '@clerk/clerk-react';
 import './index.css'; 
 import PatientTable from './components/PatientTable'; 
-import AdminLogin from './Pages/AdminLogin';
-import AdminRegister from './Pages/AdminRegister';
-import CreatePatient from './Pages/CreatePatient';
 import Navbar from './components/Navbar'; 
-import AdminDashboard from './components/AdminDashboard';
 import ReportPage from './components/ReportPage';
 import AudioRecorderComponent from './components/AudioRecorderComponent';
 
-
 const App = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const { isSignedIn } = useAuth();
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-  };
+  useEffect(() => {
+    if (isSignedIn) {
+      navigate('/patient-table');
+    }
+  }, [isSignedIn, navigate]);
 
-  return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400 flex flex-col">
-        {}
-        <Navbar onSearch={handleSearch} searchQuery={searchQuery} />
-        <div className="flex-1">
-          <Routes>
-            <Route path="/login" element={<AdminLogin />} />
-            <Route path="/register" element={<AdminRegister />} />
-            <Route path="/" element={<PatientTable searchQuery={searchQuery} />} />
-            <Route path="/report" element={<ReportPage />} />
-            <Route path='/admin-dashboard' element={<AdminDashboard />} />
-            <Route path="/audio" element={<AudioRecorderComponent />} />
-            <Route path="*" element={<div className="text-center text-red-600">Page Not Found</div>} />
-          </Routes>
-        </div>
-      </div>
-    </Router>
-  );
+  return (
+    <div className="min-h-screen bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400 flex flex-col">
+      <Navbar />
+      <div className="flex-1">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div className="flex items-center justify-center h-full mt-20">
+                <SignIn />
+              </div>
+            }
+          />
+          <Route
+            path="/patient-table"
+            element={
+              <SignedIn>
+                <PatientTable />
+              </SignedIn>
+            }
+          />
+          <Route
+            path="/report"
+            element={
+              <SignedIn>
+                <ReportPage />
+              </SignedIn>
+            }
+          />
+          <Route
+            path="/audio"
+            element={
+              <SignedIn>
+                <AudioRecorderComponent />
+              </SignedIn>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            }
+          />
+        </Routes>
+      </div>
+    </div>
+  );
 };
 
 export default App;
