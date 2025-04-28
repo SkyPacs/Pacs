@@ -3,25 +3,28 @@ import moment from 'moment';
 import DicomFile from '../models/dicomFileModel.js';
 import Patient from '../models/patientModel.js';
 
-const ORTHANC_URL = process.env.ORTHANC_URL || 'http://localhost:8042';
+const ORTHANC_URL = process.env.ORTHANC_URL || 'http://localhost:8042';  // Get Orthanc URL from environment or use default
 
-export const processDicomImagesFromOrthanc = async (req, res) => {
+// Controller to process DICOM images from Orthanc server
+export const processDicomImagesFromOrthanc = async (req, res) => {      
   try {
     console.log('Fetching instances from Orthanc...');
     
+    // Fetch DICOM instance IDs from Orthanc
     let instanceIds = [];
     try {
       const instancesResponse = await axios.get(`${ORTHANC_URL}/instances`);
-      instanceIds = instancesResponse.data;
+      instanceIds = instancesResponse.data;       // Store array of DICOM instance IDs
     } catch (error) {
       console.error('Error fetching instances from Orthanc:', error.message);
       return res.status(500).json({ message: 'Failed to fetch instances from Orthanc.' });
     }
 
+     // Fetch patient IDs from Orthanc
     let patientIds = [];
     try {
       const patientResponse = await axios.get(`${ORTHANC_URL}/patients`);
-      patientIds = patientResponse.data;
+      patientIds = patientResponse.data;    // Store array of Orthanc patient IDs
     } catch (error) {
       console.error('Error fetching patients from Orthanc:', error.message);
       return res.status(500).json({ message: 'Failed to fetch patients from Orthanc.' });
@@ -29,17 +32,22 @@ export const processDicomImagesFromOrthanc = async (req, res) => {
 
     console.log('Orthanc patients:', patientIds);
 
+    // Check for empty data
     if (instanceIds.length === 0 || patientIds.length === 0) {
       return res.status(404).json({ message: 'No DICOM images or patients available in Orthanc.' });
     }
 
+    // Process most recent patient first
     const orthancPatientId = patientIds[patientIds.length - 1];
 
+    // Process each DICOM instance
     for (const instanceId of instanceIds) {
       try {
+        // Get DICOM metadata for current instance
         const metadataResponse = await axios.get(`${ORTHANC_URL}/instances/${instanceId}/tags`);
         const metadata = metadataResponse.data;
 
+        // Extract DICOM tags using standard DICOM tag identifiers
         const PatientID = metadata['0010,0020']?.Value;
         const PatientName = metadata['0010,0010']?.Value || 'Unknown';
         const PatientSex = metadata['0010,0040']?.Value?.[0] || 'Unknown';
@@ -67,6 +75,7 @@ export const processDicomImagesFromOrthanc = async (req, res) => {
         // Check if the patient already exists with the same study
         let patient = await Patient.findOne({ orthancPatientId, studyInstanceUID });
 
+        // Create new patient if not found
         if (!patient) {
           try {
             patient = new Patient({
@@ -104,7 +113,7 @@ export const processDicomImagesFromOrthanc = async (req, res) => {
           seriesInstanceUID,
           sopInstanceUID,
         });
-
+        
         try {
           await dicomFile.save();
           patient.dicomFiles.push(dicomFile._id);
@@ -131,7 +140,7 @@ export const processDicomImagesFromOrthanc = async (req, res) => {
 
 
 
-
+// Controller to get all patients with their DICOM metadata
 export const getAllPatientsWithDicomMetadata = async (req, res) => {
   try {
     const patients = await Patient.find().populate('dicomFiles'); 
@@ -151,7 +160,7 @@ export const getAllPatientsWithDicomMetadata = async (req, res) => {
       studyInstanceUID: patient.studyInstanceUID,
       seriesInstanceUID: patient.seriesInstanceUID,
       sopInstanceUID: patient.sopInstanceUID,
-      dicomCount: patient.dicomFiles.length, 
+      dicomCount: patient.dicomFiles.length,  // Count of associated DICOM files
       dicomFiles: patient.dicomFiles.map(dicomFile => ({
         dicomInstanceId: dicomFile.dicomInstanceId,
         studyDate: dicomFile.studyDate,
@@ -169,4 +178,3 @@ export const getAllPatientsWithDicomMetadata = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-

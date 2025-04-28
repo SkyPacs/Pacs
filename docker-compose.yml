@@ -1,57 +1,56 @@
-
 services:
   client:
-    container_name: client 
+    container_name: client # Explicit container naming
     build:
-      context: ./client
-      dockerfile: Dockerfile
-    restart: unless-stopped
+      context: ./client # Build from client directory
+      dockerfile: Dockerfile # Use Dockerfile in client directory
+    restart: unless-stopped # Auto-restart unless manually stopped
     ports:
-      - "${CLIENT_HOST_PORT}:5173" 
+      - "${CLIENT_HOST_PORT}:5173" # Map host port to container port 5173 (Vite)
     networks:
-      - ${NETWORK_NAME}
+      - ${NETWORK_NAME} # Use network name from .env file
     depends_on:
-      - api
+      - api # Start after API service
 
   api:
-    container_name: api 
+    container_name: api
     build:
-      context: ./server
+      context: ./server # Build from server directory
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       # Use variables from .env file
-      - MONGO_URL=${MONGO_URL}
-      - DB_NAME=${DB_NAME}
-      - JWT_SECRET=${JWT_SECRET}
-      - PORT=${API_INTERNAL_PORT} 
-      - ORTHANC_URL=http://orthanc:8042
+      - MONGO_URL=${MONGO_URL} # MongoDB connection string
+      - DB_NAME=${DB_NAME} # Database name
+      - JWT_SECRET=${JWT_SECRET} # Auth secret
+      - PORT=${API_INTERNAL_PORT} # Internal container port
+      - ORTHANC_URL=http://orthanc:8042 # Orthanc service discovery
     volumes:
-      - ./server:/app 
-      - /app/node_modules 
+      - ./server:/app # Mount server directory
+      - /app/node_modules # Keep node_modules isolated
     ports:
-      - "${API_HOST_PORT}:${API_INTERNAL_PORT}"
+      - "${API_HOST_PORT}:${API_INTERNAL_PORT}" # Port mapping
     networks:
       - ${NETWORK_NAME}
     depends_on:
-      - orthanc
+      - orthanc # Start after Orthanc service
 
   orthanc:
-    container_name: orthanc 
-    image: ${ORTHANC_IMAGE}
-    ports:
-      - "${ORTHANC_HTTP_HOST_PORT}:8042" 
-      - "${ORTHANC_DICOM_HOST_PORT}:4242"
-    volumes:
-      - ${ORTHANC_DATA_PATH}:/var/lib/orthanc/db
-      - ${ORTHANC_INDEX_PATH}:/var/lib/orthanc/db-index
-      - ${ORTHANC_LOGS_PATH}:/var/log/orthanc
-      - ${ORTHANC_CONFIG_PATH}:/etc/orthanc/orthanc.json
-      - ${ORTHANC_LUA_PATH}:/etc/orthanc/LuaScripts
+    container_name: orthanc
+    image: ${ORTHANC_IMAGE} # Orthanc DICOM server image
+    ports: # DICOM protocol ports
+      - "${ORTHANC_HTTP_HOST_PORT}:8042" # REST API port
+      - "${ORTHANC_DICOM_HOST_PORT}:4242" # DICOM communication port
+    volumes: # Persistent storage
+      - ${ORTHANC_DATA_PATH}:/var/lib/orthanc/db # DICOM storage
+      - ${ORTHANC_INDEX_PATH}:/var/lib/orthanc/db-index # Metadata
+      - ${ORTHANC_LOGS_PATH}:/var/log/orthanc # Log files
+      - ${ORTHANC_CONFIG_PATH}:/etc/orthanc/orthanc.json # Configuration
+      - ${ORTHANC_LUA_PATH}:/etc/orthanc/LuaScripts # Lua scripts
     restart: unless-stopped
     networks:
       - ${NETWORK_NAME}
 
 networks:
-  pacs: 
-    driver: bridge
+  pacs: # Custom bridge network
+    driver: bridge # Isolated network for services
