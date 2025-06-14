@@ -5,6 +5,8 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+    env_file:
+      - ./client/.env
     restart: unless-stopped
     ports:
       - "${CLIENT_HOST_PORT}:5173" 
